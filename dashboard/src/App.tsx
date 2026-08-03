@@ -1,96 +1,46 @@
 import { useEffect, useMemo, useState } from "react";
 import { createExportFilename } from "../../shared/exporters";
-import { extractFromText } from "../../shared/extractor";
-import { createConfig, defaultExtractionConfig } from "../../shared/filters";
 import { applyValueFilters, defaultValueFilterOptions, type ValueFilterOptions } from "../../shared/result-filters";
 import type { ExtractionMode, ExtractionRow, ExtractionSession } from "../../shared/types";
-import { createSession, exportRows, getHealth, listSessions } from "./lib/api";
+import { exportRows, getHealth, listSessions } from "./lib/api";
 
-const sampleText = "debo1\ndolli\nLil08\nDebs9\ndebbie ♡\n❤️Debster 💜";
+type VisibleMode = Exclude<ExtractionMode, "both">;
+
+const emptyFilters = { ...defaultValueFilterOptions };
 
 export function App() {
-  const [version, setVersion] = useState("0.1.1");
-  const [domain, setDomain] = useState("manual.local");
-  const [mode, setMode] = useState<Exclude<ExtractionMode, "both">>("username");
-  const [sourceText, setSourceText] = useState(sampleText);
-  const [query, setQuery] = useState("");
+  const [version, setVersion] = useState("0.1.3");
+  const [mode, setMode] = useState<VisibleMode>("username");
   const [sessions, setSessions] = useState<ExtractionSession[]>([]);
-  const [activeSession, setActiveSession] = useState<ExtractionSession | undefined>();
-  const [manualDirty, setManualDirty] = useState(false);
-  const [filters, setFilters] = useState<ValueFilterOptions>(defaultValueFilterOptions);
+  const [usernameFilters, setUsernameFilters] = useState<ValueFilterOptions>(emptyFilters);
+  const [nameFilters, setNameFilters] = useState<ValueFilterOptions>(emptyFilters);
   const [notice, setNotice] = useState("");
-
-  const config = useMemo(
-    () =>
-      createConfig({
-        ...defaultExtractionConfig,
-        mode,
-        sourceType: "manual",
-        sourceDomain: domain,
-        usernameOptions: { minLength: 1, maxLength: 15 }
-      }),
-    [domain, mode]
-  );
-
-  const result = useMemo(
-    () => extractFromText(sourceText, { mode, sourceType: "manual", sourceDomain: domain, config }),
-    [config, domain, mode, sourceText]
-  );
-
-  const baseRows = useMemo(() => {
-    if (activeSession && !manualDirty && activeSession.mode !== "both") {
-      return activeSession.rows.filter((row) => row.type === activeSession.mode);
-    }
-    return result.rows;
-  }, [activeSession, manualDirty, result.rows]);
-
-  const visibleRows = useMemo(() => {
-    return baseRows
-      .filter((row) => row.status === "valid")
-      .map((row) => ({ ...row, cleanedValue: applyValueFilters(row.cleanedValue, filters) }))
-      .filter((row) => row.cleanedValue)
-      .filter((row) => row.cleanedValue.toLocaleLowerCase().includes(query.toLocaleLowerCase()));
-  }, [baseRows, filters, query]);
 
   useEffect(() => {
     void refresh();
   }, []);
 
+  const activeSession = useMemo(() => findLatestSession(sessions, mode), [mode, sessions]);
+  const activeFilters = mode === "username" ? usernameFilters : nameFilters;
+
+  const visibleRows = useMemo(() => {
+    return (activeSession?.rows ?? [])
+      .filter((row) => row.status === "valid" && row.type === mode)
+      .map((row) => ({ ...row, cleanedValue: applyValueFilters(row.cleanedValue, activeFilters) }))
+      .filter((row) => row.cleanedValue);
+  }, [activeFilters, activeSession, mode]);
+
+  const resultText = useMemo(() => visibleRows.map((row) => row.cleanedValue).join("\n"), [visibleRows]);
+
   async function refresh() {
     const [health, history] = await Promise.all([getHealth(), listSessions()]);
     setVersion(health.version);
     setSessions(history);
-    if (!manualDirty && history[0] && history[0].mode !== "both") {
-      setActiveSession(history[0]);
-      setMode(history[0].mode);
-      setDomain(history[0].domain);
-    }
   }
 
-  async function extract(nextMode: Exclude<ExtractionMode, "both">) {
-    setMode(nextMode);
-    const nextResult = extractFromText(sourceText, {
-      mode: nextMode,
-      sourceType: "manual",
-      sourceDomain: domain,
-      config: { ...config, mode: nextMode }
-    });
-    const session = await createSession({
-      name: `${domain} ${nextMode === "username" ? "usernames" : "names"}`,
-      domain,
-      mode: nextMode,
-      sourceType: "manual",
-      rows: nextResult.rows
-    });
-    setSessions((current) => [session, ...current]);
-    setActiveSession(session);
-    setManualDirty(false);
-    setNotice(`Found ${session.summary.validResults} ${nextMode === "username" ? "usernames" : "names"}.`);
-  }
-
-  async function copyValues(rows: ExtractionRow[] = visibleRows) {
-    await navigator.clipboard.writeText(rows.map((row) => row.cleanedValue).join("\n"));
-    setNotice(`Copied ${rows.length} ${mode === "username" ? "usernames" : "names"}.`);
+  async function copyValues() {
+    await navigator.clipboard.writeText(resultText);
+    setNotice(`Copied ${visibleRows.length} ${modeLabel(mode).plural}.`);
   }
 
   async function download(format: "txt" | "csv" | "json") {
@@ -99,13 +49,14 @@ export function App() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = createExportFilename(mode, domain, format);
+    link.download = createExportFilename(mode, activeSession?.domain ?? "snapboard", format);
     link.click();
     URL.revokeObjectURL(url);
   }
 
-  function updateFilter(key: keyof ValueFilterOptions, value: boolean) {
-    setFilters((current) => ({ ...current, [key]: value }));
+  function updateFilter(targetMode: VisibleMode, key: keyof ValueFilterOptions, value: boolean) {
+    const setter = targetMode === "username" ? setUsernameFilters : setNameFilters;
+    setter((current) => ({ ...current, [key]: value }));
   }
 
   return (
@@ -115,7 +66,7 @@ export function App() {
           <div className="brand-mark">S</div>
           <div>
             <h1>Sift</h1>
-            <p>Extract usernames or names from visible text.</p>
+            <p>SnapBoard username and display-name extractor.</p>
           </div>
         </div>
         <div className="status-pill">
@@ -124,63 +75,21 @@ export function App() {
         </div>
       </header>
 
-      <section className="hero-panel">
-        <div>
-          <p className="eyebrow">Current source</p>
-          <input aria-label="Source domain" value={domain} onChange={(event) => setDomain(event.target.value)} />
-        </div>
-        <div className="primary-actions" aria-label="Extraction actions">
-          <button className={mode === "username" ? "primary active" : "primary"} type="button" onClick={() => extract("username")}>
-            Get Usernames
-          </button>
-          <button className={mode === "name" ? "primary active" : "primary"} type="button" onClick={() => extract("name")}>
-            Get Names
-          </button>
-        </div>
-      </section>
-
       <section className="workspace-grid">
-        <section className="panel input-panel">
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">Input</p>
-              <h2>Paste Text</h2>
-            </div>
-            <label className="file-button">
-              Import
-              <input
-                type="file"
-                accept=".txt,.csv,text/plain,text/csv"
-                onChange={async (event) => {
-                  const file = event.target.files?.[0];
-                  if (file) {
-                    setSourceText(await file.text());
-                    setManualDirty(true);
-                    setActiveSession(undefined);
-                  }
-                }}
-              />
-            </label>
-          </div>
-          <textarea
-            aria-label="Text to extract from"
-            value={sourceText}
-            onChange={(event) => {
-              setSourceText(event.target.value);
-              setManualDirty(true);
-              setActiveSession(undefined);
-            }}
-          />
-        </section>
-
         <section className="panel results-panel">
           <div className="panel-heading">
             <div>
               <p className="eyebrow">Results</p>
-              <h2>{mode === "username" ? "Usernames" : "Names"}</h2>
+              <h2>{modeLabel(mode).title}</h2>
             </div>
             <div className="actions">
-              <button type="button" onClick={() => copyValues()}>Copy</button>
+              <button className={mode === "username" ? "active" : ""} type="button" onClick={() => setMode("username")}>
+                Usernames
+              </button>
+              <button className={mode === "name" ? "active" : ""} type="button" onClick={() => setMode("name")}>
+                Display Names
+              </button>
+              <button type="button" onClick={copyValues}>Copy</button>
               <button type="button" onClick={() => download("txt")}>TXT</button>
               <button type="button" onClick={() => download("csv")}>CSV</button>
             </div>
@@ -188,46 +97,33 @@ export function App() {
 
           <div className="result-meta">
             <strong>{visibleRows.length}</strong>
-            <span>{mode === "username" ? "usernames" : "names"} ready</span>
+            <span>{activeSession ? `${modeLabel(mode).plural} ready` : "scan SnapBoard first"}</span>
           </div>
 
-          <input className="search" placeholder={`Search ${mode === "username" ? "usernames" : "names"}`} value={query} onChange={(event) => setQuery(event.target.value)} />
-
-          <div className="filter-row" aria-label="Cleanup filters">
-            <label>
-              <input type="checkbox" checked={filters.removeNumbers} onChange={(event) => updateFilter("removeNumbers", event.target.checked)} />
-              Remove numbers
-            </label>
-            <label>
-              <input type="checkbox" checked={filters.removeEmoji} onChange={(event) => updateFilter("removeEmoji", event.target.checked)} />
-              Remove emoji
-            </label>
-            <label>
-              <input type="checkbox" checked={filters.removeSymbols} onChange={(event) => updateFilter("removeSymbols", event.target.checked)} />
-              Remove symbols
-            </label>
-            <label>
-              <input type="checkbox" checked={filters.collapseSpaces} onChange={(event) => updateFilter("collapseSpaces", event.target.checked)} />
-              Trim spaces
-            </label>
-          </div>
-
-          <div className="result-list">
-            {visibleRows.map((row) => (
-              <button className="result-item" key={row.id} type="button" onClick={() => copyValues([row])}>
-                <span>{row.cleanedValue}</span>
-                <small>{row.sourceDomain}</small>
-              </button>
-            ))}
-            {!visibleRows.length && <p className="empty">No {mode === "username" ? "usernames" : "names"} found yet.</p>}
-          </div>
+          <textarea
+            aria-label={`${modeLabel(mode).title} results`}
+            className="results-textarea"
+            readOnly
+            placeholder={`Click ${mode === "username" ? "Get Usernames" : "Get Display Names"} in the Sift popup on SnapBoard.`}
+            value={resultText}
+          />
         </section>
+
+        <aside className="panel settings-panel">
+          <div>
+            <p className="eyebrow">Settings</p>
+            <h2>Cleanup Rules</h2>
+          </div>
+
+          <SettingsGroup mode="username" filters={usernameFilters} onChange={updateFilter} />
+          <SettingsGroup mode="name" filters={nameFilters} onChange={updateFilter} />
+        </aside>
       </section>
 
       <section className="history-strip" aria-label="Recent extractions">
         <div>
           <p className="eyebrow">Recent</p>
-          <strong>{sessions.length ? `${sessions.length} saved extractions` : "No saved extractions yet"}</strong>
+          <strong>{sessions.length ? `${sessions.length} saved scans` : "No SnapBoard scan yet"}</strong>
         </div>
         <button type="button" onClick={refresh}>Refresh</button>
       </section>
@@ -235,4 +131,46 @@ export function App() {
       <p className="notice" role="status">{notice}</p>
     </main>
   );
+}
+
+function SettingsGroup({
+  mode,
+  filters,
+  onChange
+}: {
+  mode: VisibleMode;
+  filters: ValueFilterOptions;
+  onChange: (mode: VisibleMode, key: keyof ValueFilterOptions, value: boolean) => void;
+}) {
+  return (
+    <section className="settings-group">
+      <h3>{modeLabel(mode).title}</h3>
+      <label>
+        <input type="checkbox" checked={filters.removeNumbers} onChange={(event) => onChange(mode, "removeNumbers", event.target.checked)} />
+        Remove numbers
+      </label>
+      <label>
+        <input type="checkbox" checked={filters.removeEmoji} onChange={(event) => onChange(mode, "removeEmoji", event.target.checked)} />
+        Remove emoji
+      </label>
+      <label>
+        <input type="checkbox" checked={filters.removeSymbols} onChange={(event) => onChange(mode, "removeSymbols", event.target.checked)} />
+        Remove symbols
+      </label>
+      <label>
+        <input type="checkbox" checked={filters.collapseSpaces} onChange={(event) => onChange(mode, "collapseSpaces", event.target.checked)} />
+        Trim spaces
+      </label>
+    </section>
+  );
+}
+
+function findLatestSession(sessions: ExtractionSession[], mode: VisibleMode): ExtractionSession | undefined {
+  return sessions.find((session) => session.mode === mode);
+}
+
+function modeLabel(mode: VisibleMode) {
+  return mode === "username"
+    ? { title: "Usernames", plural: "usernames" }
+    : { title: "Display Names", plural: "display names" };
 }

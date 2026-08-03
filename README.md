@@ -69,13 +69,13 @@ Click **Select Elements** in the popup, hover a page element, then click it. Sif
 Open SnapBoard's **Username Generator** page and generate the count you want there. Click the Sift extension popup:
 
 - **Get Usernames** scans all generated `.username-value` entries on the page.
-- **Get Names** scans all generated `.display-value` entries on the page.
+- **Get Display Names** scans all generated `.display-value` entries on the page.
 
 Open the bundled Sift dashboard to copy/export the latest scan or apply cleanup filters such as removing numbers, emoji, symbols, and extra spaces.
 
 ## Extract Names
 
-Click **Get Names** in the popup or dashboard. By default, Sift removes zero-width characters and repeated spaces while preserving letters, numbers, emoji, hearts, symbols, punctuation, and original capitalization.
+Click **Get Display Names** in the popup. By default, Sift removes zero-width characters and repeated spaces while preserving letters, numbers, emoji, hearts, symbols, punctuation, and original capitalization.
 
 ## Extract Usernames
 

@@ -90,7 +90,7 @@ async function runExtraction(mode: Exclude<ExtractionMode, "both">) {
   els.progress.value = 70;
   await saveResult(mode, result, page.domain || state.domain);
   els.progress.value = 100;
-  showNotice(`Found ${result.summary.validResults} ${mode === "username" ? "usernames" : "names"}.`);
+  showNotice(`Found ${result.summary.validResults} ${mode === "username" ? "usernames" : "display names"}.`);
   setTimeout(() => (els.progress.value = 0), 800);
 }
 
