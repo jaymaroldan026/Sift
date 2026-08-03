@@ -23,6 +23,10 @@ describe("result cleanup filters", () => {
     expect(applyValueFilters("toolongusername", { minLength: 1, maxLength: 8 })).toBe("");
   });
 
+  it("does not let number removal move too-long usernames into range", () => {
+    expect(applyValueFilters("aliciaaaaa1234", { removeNumbers: true, maxLength: 10 })).toBe("");
+  });
+
   it("converts usernames to lowercase when enabled", () => {
     expect(applyValueFilters("Lil08", { lowercase: true })).toBe("lil08");
   });

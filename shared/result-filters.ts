@@ -26,13 +26,19 @@ export function applyValueFilters(value: string, options: Partial<ValueFilterOpt
   let cleaned = value.replace(ZERO_WIDTH_RE, "");
 
   if (merged.removeEmojiOnly && EMOJI_TEST_RE.test(cleaned) && !LETTER_TEST_RE.test(cleaned)) return "";
+  if (isOutsideLengthRange(cleaned, merged)) return "";
   if (merged.removeEmoji) cleaned = cleaned.replace(EMOJI_RE, "");
   if (merged.removeNumbers) cleaned = cleaned.replace(/\p{Number}+/gu, "");
   if (merged.removeSymbols) cleaned = cleaned.replace(/[^\p{Letter}\p{Number}\s]/gu, "");
   if (merged.collapseSpaces) cleaned = cleaned.replace(/\s+/gu, " ").trim();
   if (merged.lowercase) cleaned = cleaned.toLowerCase();
-  if (merged.minLength && cleaned.length < merged.minLength) return "";
-  if (merged.maxLength && cleaned.length > merged.maxLength) return "";
+  if (isOutsideLengthRange(cleaned, merged)) return "";
 
   return cleaned;
+}
+
+function isOutsideLengthRange(value: string, options: Partial<ValueFilterOptions>): boolean {
+  if (options.minLength && value.length < options.minLength) return true;
+  if (options.maxLength && value.length > options.maxLength) return true;
+  return false;
 }
