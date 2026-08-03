@@ -12,7 +12,7 @@ const usernameDefaultFilters = { ...defaultValueFilterOptions, minLength: 1, max
 const sessionsStorageKey = "sift:sessions";
 
 export function App() {
-  const [version, setVersion] = useState("0.1.7");
+  const [version, setVersion] = useState("0.1.8");
   const [mode, setMode] = useState<VisibleMode>("username");
   const [sessions, setSessions] = useState<ExtractionSession[]>([]);
   const [usernameFilters, setUsernameFilters] = useState<ValueFilterOptions>(usernameDefaultFilters);
@@ -241,18 +241,34 @@ function SettingsGroup({
           Lower case
         </label>
       ) : null}
-      <label>
-        <input type="checkbox" checked={filters.removeNumbers} onChange={(event) => onChange(mode, "removeNumbers", event.target.checked)} />
-        Remove numbers
-      </label>
-      <label>
-        <input type="checkbox" checked={filters.removeEmoji} onChange={(event) => onChange(mode, "removeEmoji", event.target.checked)} />
-        Remove emoji
-      </label>
-      <label>
-        <input type="checkbox" checked={filters.removeSymbols} onChange={(event) => onChange(mode, "removeSymbols", event.target.checked)} />
-        Remove symbols
-      </label>
+      {mode === "name" ? (
+        <label>
+          <input
+            type="checkbox"
+            checked={Boolean(filters.removeEmojiOnly)}
+            onChange={(event) => onChange(mode, "removeEmojiOnly", event.target.checked)}
+          />
+          Remove emoji-only
+        </label>
+      ) : null}
+      {mode === "username" ? (
+        <label>
+          <input type="checkbox" checked={filters.removeNumbers} onChange={(event) => onChange(mode, "removeNumbers", event.target.checked)} />
+          Remove numbers
+        </label>
+      ) : null}
+      {mode === "name" ? (
+        <label>
+          <input type="checkbox" checked={filters.removeEmoji} onChange={(event) => onChange(mode, "removeEmoji", event.target.checked)} />
+          Remove emoji
+        </label>
+      ) : null}
+      {mode === "username" ? (
+        <label>
+          <input type="checkbox" checked={filters.removeSymbols} onChange={(event) => onChange(mode, "removeSymbols", event.target.checked)} />
+          Remove symbols
+        </label>
+      ) : null}
       <label>
         <input type="checkbox" checked={filters.collapseSpaces} onChange={(event) => onChange(mode, "collapseSpaces", event.target.checked)} />
         Trim spaces

@@ -1,9 +1,12 @@
 const ZERO_WIDTH_RE = /[\u200B-\u200D\uFEFF]/gu;
 const EMOJI_RE = /[\p{Extended_Pictographic}\uFE0E\uFE0F]/gu;
+const EMOJI_TEST_RE = /[\p{Extended_Pictographic}\uFE0E\uFE0F]/u;
+const LETTER_TEST_RE = /\p{Letter}/u;
 
 export interface ValueFilterOptions {
   removeNumbers: boolean;
   removeEmoji: boolean;
+  removeEmojiOnly?: boolean;
   removeSymbols: boolean;
   collapseSpaces: boolean;
   lowercase?: boolean;
@@ -22,6 +25,7 @@ export function applyValueFilters(value: string, options: Partial<ValueFilterOpt
   const merged = { ...defaultValueFilterOptions, ...options };
   let cleaned = value.replace(ZERO_WIDTH_RE, "");
 
+  if (merged.removeEmojiOnly && EMOJI_TEST_RE.test(cleaned) && !LETTER_TEST_RE.test(cleaned)) return "";
   if (merged.removeEmoji) cleaned = cleaned.replace(EMOJI_RE, "");
   if (merged.removeNumbers) cleaned = cleaned.replace(/\p{Number}+/gu, "");
   if (merged.removeSymbols) cleaned = cleaned.replace(/[^\p{Letter}\p{Number}\s]/gu, "");

@@ -26,4 +26,9 @@ describe("result cleanup filters", () => {
   it("converts usernames to lowercase when enabled", () => {
     expect(applyValueFilters("Lil08", { lowercase: true })).toBe("lil08");
   });
+
+  it("drops emoji-only display names when enabled", () => {
+    expect(applyValueFilters("🌹❤️🔥", { removeEmojiOnly: true })).toBe("");
+    expect(applyValueFilters("Debster ❤️", { removeEmojiOnly: true })).toBe("Debster ❤️");
+  });
 });
