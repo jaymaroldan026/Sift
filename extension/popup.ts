@@ -1,8 +1,8 @@
 import { extractFromText } from "../shared/extractor";
+import { createLocalSiftStore } from "../shared/local-store";
 import type { ExtractionMode, ExtractionResult } from "../shared/types";
 
-const API_BASE = "http://127.0.0.1:5174";
-const DASHBOARD_URL = "http://127.0.0.1:5173";
+const store = createLocalSiftStore();
 
 const state = {
   mode: "username" as ExtractionMode,
@@ -34,7 +34,9 @@ document.querySelector("#extract-names")?.addEventListener("click", () => runExt
 document.querySelector("#extract-usernames")?.addEventListener("click", () => runExtraction("username"));
 document.querySelector("#extract-both")?.addEventListener("click", () => runExtraction("both"));
 document.querySelector("#scan-current-page")?.addEventListener("click", () => runExtraction(state.mode));
-document.querySelector("#open-dashboard")?.addEventListener("click", () => chrome.tabs.create({ url: DASHBOARD_URL }));
+document.querySelector("#open-dashboard")?.addEventListener("click", () => {
+  chrome.tabs.create({ url: chrome.runtime.getURL("dashboard/index.html") });
+});
 document.querySelector("#select-elements")?.addEventListener("click", async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab.id) return showNotice("No active tab found.", true);
@@ -55,15 +57,9 @@ async function init() {
 }
 
 async function checkHealth() {
-  try {
-    const response = await fetch(`${API_BASE}/api/health`);
-    if (!response.ok) throw new Error("Dashboard offline");
-    els.connection.textContent = "Dashboard connected";
-    els.connectionDot.classList.add("ok");
-  } catch {
-    els.connection.textContent = "Start local dashboard";
-    els.connectionDot.classList.remove("ok");
-  }
+  const health = await store.getHealth();
+  els.connection.textContent = `Local dashboard ready v${health.version}`;
+  els.connectionDot.classList.add("ok");
 }
 
 async function setActiveDomain() {
@@ -118,14 +114,9 @@ async function requestPageSnapshot(): Promise<{ text: string; domain: string }> 
 
 async function saveResult(mode: ExtractionMode, result: ExtractionResult, domain: string) {
   try {
-    const response = await fetch(`${API_BASE}/api/extractions`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name: `${domain} ${mode} scan`, domain, mode, sourceType: "visible-page", rows: result.rows })
-    });
-    if (!response.ok) throw new Error("Local server rejected the extraction.");
+    await store.createSession({ name: `${domain} ${mode} scan`, domain, mode, sourceType: "visible-page", rows: result.rows });
   } catch {
-    showNotice("Preview created, but the local server is not running.", true);
+    showNotice("Preview created, but local browser storage is unavailable.", true);
   }
 }
 

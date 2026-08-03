@@ -1,6 +1,6 @@
 # Sift
 
-Sift is a local-first Chromium browser extension and web dashboard for extracting names, usernames, or paired name-and-username rows from text already visible in the active page DOM.
+Sift is a local-first Chromium browser extension with a bundled dashboard for extracting names, usernames, or paired name-and-username rows from text already visible in the active page DOM.
 
 It works with Google Chrome, Microsoft Edge, and Chromium-based AdsPower profiles. Sift does not bypass authentication, CAPTCHA, access controls, private APIs, or security protections. It does not collect passwords, cookies, tokens, or credentials, and it does not send extracted data to cloud services.
 
@@ -18,21 +18,21 @@ npm install
 
 ## Run Locally
 
-Start the local API and dashboard together:
+For normal use, no local server is required. Build and load the extension, then open the dashboard from the extension popup.
+
+For dashboard UI development only:
 
 ```bash
-npm run dev
-```
-
-Or start them separately:
-
-```bash
-npm run start:server
 npm run dev:dashboard
 ```
 
-The API runs at `http://127.0.0.1:5174`.
-The dashboard runs at `http://127.0.0.1:5173`.
+For optional API development:
+
+```bash
+npm run start:server
+```
+
+The bundled extension dashboard stores sessions and presets in browser storage. The optional API still runs at `http://127.0.0.1:5174` for development experiments.
 
 ## Build
 
@@ -46,7 +46,7 @@ Build only the extension:
 npm run build:extension
 ```
 
-The unpacked extension is generated at `dist/extension`.
+The unpacked extension is generated at `dist/extension`, including the bundled dashboard at `dist/extension/dashboard/index.html`.
 
 ## Load The Extension
 
@@ -55,8 +55,8 @@ The unpacked extension is generated at `dist/extension`.
 3. Enable developer mode.
 4. Choose **Load unpacked**.
 5. Select `/Users/heisnberg/Documents/Sift/dist/extension`.
-6. Start the local API with `npm run start:server`.
-7. Click the Sift extension icon on a regular webpage.
+6. Click the Sift extension icon on a regular webpage.
+7. Click **Open Dashboard** to open the bundled local dashboard.
 
 Do not select `/Users/heisnberg/Documents/Sift/extension`. That folder contains TypeScript source files for development, so Chrome cannot load its background script directly.
 
@@ -80,11 +80,11 @@ Choose **Both** when names and usernames should be preserved as related rows. Th
 
 ## Presets
 
-Use **Save Preset** in the dashboard to store the active configuration locally. Presets are saved in SQLite on your computer.
+Use **Save Preset** in the dashboard to store the active configuration locally. Presets are saved in browser storage on your computer.
 
 ## Export
 
-Use dashboard export buttons to download CSV or JSON. The API also supports TXT, CSV, and JSON through `POST /api/export`.
+Use dashboard export buttons to download CSV or JSON. TXT, CSV, and JSON formatting is handled locally in the browser.
 
 ## Scripts
 
@@ -94,7 +94,6 @@ npm run dev
 npm run build
 npm run test
 npm run build:extension
-npm run start:server
 npm run package:release
 ```
 
@@ -114,11 +113,11 @@ npm run typecheck
 
 ## Local Data
 
-Sift stores extraction sessions and presets in `server/database/sift.sqlite` by default. Change the path with `SIFT_DATABASE_PATH`.
+Sift stores extraction sessions and presets in browser storage by default. The optional development API stores data in `server/database/sift.sqlite` when you run `npm run start:server`.
 
 ## Common Errors
 
-- **Dashboard offline:** Start the API with `npm run start:server`.
+- **127.0.0.1 refused to connect:** You opened the old development URL. Load the extension from `/Users/heisnberg/Documents/Sift/dist/extension`, then click **Open Dashboard** in the popup.
 - **No active tab:** Open a normal `http` or `https` page before scanning.
 - **Unsupported browser page:** Browser internal pages such as `chrome://extensions` cannot be scanned.
 - **Invalid selector:** Reopen selector mode or simplify the CSS selector.

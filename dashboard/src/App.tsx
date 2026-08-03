@@ -61,7 +61,7 @@ export function App() {
       setPresets(savedPresets);
     } catch {
       setConnected(false);
-      setNotice("Local API is offline. Run npm run start:server.");
+      setNotice("Local browser storage is unavailable.");
     }
   }
 
@@ -77,7 +77,7 @@ export function App() {
       setSessions((current) => [session, ...current]);
       setNotice(`Saved ${session.summary.validResults} valid results from ${domain}.`);
     } catch {
-      setNotice("Could not save extraction. Start the local API and try again.");
+      setNotice("Could not save extraction to local browser storage.");
     }
   }
 
@@ -140,7 +140,7 @@ export function App() {
         </div>
         <div className="status-pill" data-online={connected}>
           <span />
-          {connected ? `Connected v${version}` : "API offline"}
+          {connected ? `Local v${version}` : "Storage offline"}
         </div>
         <div className="domain-pill">{domain}</div>
       </header>

@@ -21,6 +21,7 @@ const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 const requiredFiles = [
   manifest.background?.service_worker,
   manifest.action?.default_popup,
+  "dashboard/index.html",
   ...(manifest.content_scripts ?? []).flatMap((script) => script.js ?? [])
 ].filter(Boolean);
 
@@ -31,11 +32,19 @@ for (const file of requiredFiles) {
 }
 
 const popupHtml = readFileSync(join(extensionDir, manifest.action.default_popup), "utf8");
+if (/127\.0\.0\.1|localhost/u.test(popupHtml)) {
+  fail("The extension popup must not depend on localhost. Open the bundled dashboard instead.");
+}
 const popupScripts = [...popupHtml.matchAll(/src="\/?([^"]+\.js)"/gu)].map((match) => match[1]);
 for (const file of popupScripts) {
   if (!existsSync(join(extensionDir, file))) {
     fail(`Missing popup script ${file}. Run npm run build:extension.`);
   }
+}
+
+const dashboardHtml = readFileSync(join(extensionDir, "dashboard/index.html"), "utf8");
+if (/127\.0\.0\.1|localhost/u.test(dashboardHtml)) {
+  fail("The bundled dashboard must not depend on localhost.");
 }
 
 console.log(`Extension load target is valid: ${target}`);
