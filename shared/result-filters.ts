@@ -6,6 +6,7 @@ export interface ValueFilterOptions {
   removeEmoji: boolean;
   removeSymbols: boolean;
   collapseSpaces: boolean;
+  lowercase?: boolean;
   minLength?: number;
   maxLength?: number;
 }
@@ -25,6 +26,7 @@ export function applyValueFilters(value: string, options: Partial<ValueFilterOpt
   if (merged.removeNumbers) cleaned = cleaned.replace(/\p{Number}+/gu, "");
   if (merged.removeSymbols) cleaned = cleaned.replace(/[^\p{Letter}\p{Number}\s]/gu, "");
   if (merged.collapseSpaces) cleaned = cleaned.replace(/\s+/gu, " ").trim();
+  if (merged.lowercase) cleaned = cleaned.toLowerCase();
   if (merged.minLength && cleaned.length < merged.minLength) return "";
   if (merged.maxLength && cleaned.length > merged.maxLength) return "";
 

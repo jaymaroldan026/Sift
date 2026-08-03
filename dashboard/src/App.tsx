@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { scanCurrentSnapBoardTab } from "../../shared/browser-scan";
 import { createExportFilename } from "../../shared/exporters";
 import { applyValueFilters, defaultValueFilterOptions, type ValueFilterOptions } from "../../shared/result-filters";
 import type { ExtractionMode, ExtractionRow, ExtractionSession } from "../../shared/types";
@@ -11,11 +12,12 @@ const usernameDefaultFilters = { ...defaultValueFilterOptions, minLength: 1, max
 const sessionsStorageKey = "sift:sessions";
 
 export function App() {
-  const [version, setVersion] = useState("0.1.6");
+  const [version, setVersion] = useState("0.1.7");
   const [mode, setMode] = useState<VisibleMode>("username");
   const [sessions, setSessions] = useState<ExtractionSession[]>([]);
   const [usernameFilters, setUsernameFilters] = useState<ValueFilterOptions>(usernameDefaultFilters);
   const [nameFilters, setNameFilters] = useState<ValueFilterOptions>(emptyFilters);
+  const [resultDrafts, setResultDrafts] = useState<Record<VisibleMode, string>>({ username: "", name: "" });
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
@@ -46,17 +48,27 @@ export function App() {
     return () => window.removeEventListener("pagehide", clearOnClose);
   }, []);
 
-  const activeSession = useMemo(() => findLatestSession(sessions, mode), [mode, sessions]);
+  const usernameSession = useMemo(() => findLatestSession(sessions, "username"), [sessions]);
+  const nameSession = useMemo(() => findLatestSession(sessions, "name"), [sessions]);
+  const activeSession = mode === "username" ? usernameSession : nameSession;
   const activeFilters = mode === "username" ? usernameFilters : nameFilters;
 
-  const visibleRows = useMemo(() => {
-    return (activeSession?.rows ?? [])
-      .filter((row) => row.status === "valid" && row.type === mode)
-      .map((row) => ({ ...row, cleanedValue: applyValueFilters(row.cleanedValue, activeFilters) }))
-      .filter((row) => row.cleanedValue);
-  }, [activeFilters, activeSession, mode]);
+  const usernameRows = useMemo(() => createVisibleRows(usernameSession, "username", usernameFilters), [usernameFilters, usernameSession]);
+  const nameRows = useMemo(() => createVisibleRows(nameSession, "name", nameFilters), [nameFilters, nameSession]);
+  const visibleRows = mode === "username" ? usernameRows : nameRows;
 
-  const resultText = useMemo(() => visibleRows.map((row) => row.cleanedValue).join("\n"), [visibleRows]);
+  const usernameText = useMemo(() => usernameRows.map((row) => row.cleanedValue).join("\n"), [usernameRows]);
+  const nameText = useMemo(() => nameRows.map((row) => row.cleanedValue).join("\n"), [nameRows]);
+  const activeDraft = resultDrafts[mode];
+  const draftCount = useMemo(() => countDraftLines(activeDraft), [activeDraft]);
+
+  useEffect(() => {
+    setResultDrafts((current) => ({ ...current, username: usernameText }));
+  }, [usernameText]);
+
+  useEffect(() => {
+    setResultDrafts((current) => ({ ...current, name: nameText }));
+  }, [nameText]);
 
   async function refresh() {
     const [health, history] = await Promise.all([getHealth(), listSessions()]);
@@ -65,12 +77,13 @@ export function App() {
   }
 
   async function copyValues() {
-    await navigator.clipboard.writeText(resultText);
-    setNotice(`Copied ${visibleRows.length} ${modeLabel(mode).plural}.`);
+    await navigator.clipboard.writeText(activeDraft);
+    setNotice(`Copied ${draftCount} ${modeLabel(mode).plural}.`);
   }
 
   async function download(format: "txt" | "csv" | "json") {
-    const text = await exportRows(visibleRows, format);
+    const rows = createRowsFromDraft(activeDraft, mode, activeSession?.domain ?? "snapboard");
+    const text = format === "txt" ? activeDraft : await exportRows(rows, format);
     const blob = new Blob([text], { type: format === "csv" ? "text/csv;charset=utf-8" : "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -83,7 +96,18 @@ export function App() {
   async function clearResults() {
     await clearSessions();
     setSessions([]);
+    setResultDrafts({ username: "", name: "" });
     setNotice("Cleared temporary results.");
+  }
+
+  async function getDataFromSnapBoard() {
+    try {
+      const counts = await scanCurrentSnapBoardTab();
+      await refresh();
+      setNotice(`Found ${counts.usernames} usernames and ${counts.names} display names.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "No SnapBoard tab found.");
+    }
   }
 
   function updateFilter(targetMode: VisibleMode, key: keyof ValueFilterOptions, value: boolean) {
@@ -127,6 +151,7 @@ export function App() {
               <h2>{modeLabel(mode).title}</h2>
             </div>
             <div className="actions">
+              <button type="button" onClick={getDataFromSnapBoard}>Get Data</button>
               <button className={mode === "username" ? "active" : ""} type="button" onClick={() => setMode("username")}>
                 Usernames
               </button>
@@ -141,16 +166,16 @@ export function App() {
           </div>
 
           <div className="result-meta">
-            <strong>{visibleRows.length}</strong>
+            <strong>{draftCount}</strong>
             <span>{activeSession ? `${modeLabel(mode).plural} ready` : "scan SnapBoard first"}</span>
           </div>
 
           <textarea
             aria-label={`${modeLabel(mode).title} results`}
             className="results-textarea"
-            readOnly
-            placeholder={`Click ${mode === "username" ? "Get Usernames" : "Get Display Names"} in the Sift popup on SnapBoard.`}
-            value={resultText}
+            placeholder="Click Get Data in the Sift popup or dashboard while SnapBoard is open."
+            value={activeDraft}
+            onChange={(event) => setResultDrafts((current) => ({ ...current, [mode]: event.target.value }))}
           />
         </section>
 
@@ -210,6 +235,12 @@ function SettingsGroup({
           </label>
         </div>
       ) : null}
+      {mode === "username" ? (
+        <label>
+          <input type="checkbox" checked={Boolean(filters.lowercase)} onChange={(event) => onChange(mode, "lowercase", event.target.checked)} />
+          Lower case
+        </label>
+      ) : null}
       <label>
         <input type="checkbox" checked={filters.removeNumbers} onChange={(event) => onChange(mode, "removeNumbers", event.target.checked)} />
         Remove numbers
@@ -232,6 +263,39 @@ function SettingsGroup({
 
 function findLatestSession(sessions: ExtractionSession[], mode: VisibleMode): ExtractionSession | undefined {
   return sessions.find((session) => session.mode === mode);
+}
+
+function createVisibleRows(
+  session: ExtractionSession | undefined,
+  mode: VisibleMode,
+  filters: ValueFilterOptions
+): ExtractionRow[] {
+  return (session?.rows ?? [])
+    .filter((row) => row.status === "valid" && row.type === mode)
+    .map((row) => ({ ...row, cleanedValue: applyValueFilters(row.cleanedValue, filters) }))
+    .filter((row) => row.cleanedValue);
+}
+
+function countDraftLines(value: string): number {
+  return value.split(/\r?\n/u).filter((line) => line.trim()).length;
+}
+
+function createRowsFromDraft(value: string, mode: VisibleMode, domain: string): ExtractionRow[] {
+  return value
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => ({
+      id: `draft_${mode}_${line}`,
+      rawValue: line,
+      cleanedValue: line,
+      username: mode === "username" ? line : undefined,
+      name: mode === "name" ? line : undefined,
+      type: mode,
+      status: "valid",
+      sourceDomain: domain,
+      extractedAt: new Date().toISOString()
+    }));
 }
 
 function modeLabel(mode: VisibleMode) {

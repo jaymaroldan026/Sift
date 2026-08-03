@@ -23,14 +23,19 @@
       </section>
 
       <section class="button-grid">
-        <button id="extract-usernames" type="button">Get Usernames</button>
-        <button id="extract-names" type="button">Get Display Names</button>
+        <button id="get-data" type="button">Get Data</button>
       </section>
 
       <section class="result-card">
-        <div>
-          <span class="label">Last extraction</span>
-          <strong id="last-count">0</strong>
+        <div class="counts-grid">
+          <div>
+            <span class="label">Usernames</span>
+            <strong id="username-count">0</strong>
+          </div>
+          <div>
+            <span class="label">Display names</span>
+            <strong id="name-count">0</strong>
+          </div>
         </div>
         <progress id="progress" max="100" value="0"></progress>
       </section>

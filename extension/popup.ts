@@ -1,12 +1,10 @@
-import { extractFromText } from "../shared/extractor";
+import { scanActiveTabForData } from "../shared/browser-scan";
 import { createLocalSiftStore } from "../shared/local-store";
-import type { ExtractionMode, ExtractionResult, ExtractionRow } from "../shared/types";
 
 const store = createLocalSiftStore();
 
 const state = {
-  domain: "unknown",
-  lastResult: undefined as ExtractionResult | undefined
+  domain: "unknown"
 };
 
 const els = {
@@ -14,12 +12,14 @@ const els = {
   connection: document.querySelector<HTMLSpanElement>("#connection")!,
   connectionDot: document.querySelector<HTMLSpanElement>("#connection-dot")!,
   notice: document.querySelector<HTMLParagraphElement>("#notice")!,
-  lastCount: document.querySelector<HTMLElement>("#last-count")!,
+  usernameCount: document.querySelector<HTMLElement>("#username-count")!,
+  nameCount: document.querySelector<HTMLElement>("#name-count")!,
   progress: document.querySelector<HTMLProgressElement>("#progress")!
 };
 
-document.querySelector("#extract-names")?.addEventListener("click", () => runExtraction("name"));
-document.querySelector("#extract-usernames")?.addEventListener("click", () => runExtraction("username"));
+document.querySelector("#get-data")?.addEventListener("click", () => {
+  void runDataScan();
+});
 document.querySelector("#open-dashboard")?.addEventListener("click", () => {
   chrome.tabs.create({ url: chrome.runtime.getURL("dashboard/index.html") });
 });
@@ -44,94 +44,21 @@ async function setActiveDomain() {
   els.domain.textContent = url.hostname;
 }
 
-async function runExtraction(mode: Exclude<ExtractionMode, "both">) {
+async function runDataScan() {
   els.progress.value = 20;
-  const page = await requestPageSnapshot();
-  const snapBoardValues = mode === "username" ? page.snapBoard?.usernames : page.snapBoard?.names;
-  const values = snapBoardValues?.length ? snapBoardValues : [];
-
-  if (!values.length && !page.text) {
-    showNotice(`No ${mode === "username" ? "usernames" : "names"} found on this page.`, true);
+  try {
+    const counts = await scanActiveTabForData();
+    state.domain = counts.domain;
+    els.domain.textContent = counts.domain;
+    els.usernameCount.textContent = String(counts.usernames);
+    els.nameCount.textContent = String(counts.names);
+    els.progress.value = 100;
+    showNotice(`Found ${counts.usernames} usernames and ${counts.names} display names.`);
+    setTimeout(() => (els.progress.value = 0), 800);
+  } catch (error) {
     els.progress.value = 0;
-    return;
+    showNotice(error instanceof Error ? error.message : "Could not scan this tab.", true);
   }
-
-  const result = values.length
-    ? createResultFromValues(values, mode, page.domain || state.domain, mode === "username" ? ".username-value" : ".display-value")
-    : extractFromText(page.text, {
-        mode,
-        sourceType: "visible-page",
-        sourceDomain: page.domain || state.domain,
-        config: {
-          usernameOptions: {
-            minLength: 1,
-            maxLength: 15,
-            allowPeriods: true,
-            allowUnderscores: true,
-            allowHyphens: true
-          }
-        }
-      });
-
-  state.lastResult = result;
-  els.lastCount.textContent = String(result.summary.validResults);
-  els.progress.value = 70;
-  await saveResult(mode, result, page.domain || state.domain);
-  els.progress.value = 100;
-  showNotice(`Found ${result.summary.validResults} ${mode === "username" ? "usernames" : "display names"}.`);
-  setTimeout(() => (els.progress.value = 0), 800);
-}
-
-async function requestPageSnapshot(): Promise<{ text: string; domain: string; snapBoard?: { usernames: string[]; names: string[] } }> {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab.id) throw new Error("No active tab found.");
-  try {
-    return await chrome.tabs.sendMessage(tab.id, { type: "SIFT_SCAN_PAGE" });
-  } catch {
-    await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content-script.js"] });
-    return await chrome.tabs.sendMessage(tab.id, { type: "SIFT_SCAN_PAGE" });
-  }
-}
-
-async function saveResult(mode: ExtractionMode, result: ExtractionResult, domain: string) {
-  try {
-    await store.createSession({ name: `${domain} ${mode} scan`, domain, mode, sourceType: "visible-page", rows: result.rows });
-  } catch {
-    showNotice("Preview created, but local browser storage is unavailable.", true);
-  }
-}
-
-function createResultFromValues(
-  values: string[],
-  mode: Exclude<ExtractionMode, "both">,
-  domain: string,
-  selector: string
-): ExtractionResult {
-  const rows: ExtractionRow[] = values.map((value) => ({
-    id: `row_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`,
-    rawValue: value,
-    cleanedValue: value,
-    name: mode === "name" ? value : undefined,
-    username: mode === "username" ? value : undefined,
-    type: mode,
-    status: "valid",
-    sourceDomain: domain,
-    sourceSelector: selector,
-    extractedAt: new Date().toISOString()
-  }));
-
-  return {
-    rows,
-    summary: {
-      totalScanned: rows.length,
-      validResults: rows.length,
-      uniqueResults: rows.length,
-      duplicates: 0,
-      rejectedResults: 0,
-      namesExtracted: mode === "name" ? rows.length : 0,
-      usernamesExtracted: mode === "username" ? rows.length : 0
-    }
-  };
 }
 
 function showNotice(message: string, error = false) {

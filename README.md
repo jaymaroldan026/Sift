@@ -64,18 +64,17 @@ Do not select `/Users/heisnberg/Documents/Sift/extension`. That folder contains 
 
 Open SnapBoard's **Username Generator** page and generate the count you want there. Click the Sift extension popup:
 
-- **Get Usernames** scans all generated `.username-value` entries on the page.
-- **Get Display Names** scans all generated `.display-value` entries on the page.
+- **Get Data** scans all generated `.username-value` and `.display-value` entries on the page.
 
-Open the bundled Sift dashboard to copy/export the current scan or apply cleanup filters such as removing numbers, emoji, symbols, and extra spaces. Dashboard results are temporary; use **Clear** to empty them, or close the dashboard tab to clear the current scan view.
+Open the bundled Sift dashboard to copy/export the current scan, edit the results text box, apply cleanup filters, or click **Get Data** to scan the open SnapBoard tab. Dashboard results are temporary; use **Clear** to empty them, or close the dashboard tab to clear the current scan view.
 
 ## Extract Names
 
-Click **Get Display Names** in the popup. By default, Sift removes zero-width characters and repeated spaces while preserving letters, numbers, emoji, hearts, symbols, punctuation, and original capitalization.
+Click **Get Data** in the popup or dashboard. By default, Sift removes zero-width characters and repeated spaces while preserving letters, numbers, emoji, hearts, symbols, punctuation, and original capitalization.
 
 ## Extract Usernames
 
-Click **Get Usernames**. By default, Sift removes a leading `@`, keeps original casing, allows letters and numbers such as `debo1` and `Lil08`, rejects spaces/symbols, and uses a 1-15 character range.
+Click **Get Data**. By default, Sift removes a leading `@`, keeps original casing, allows letters and numbers such as `debo1` and `Lil08`, rejects spaces/symbols, and uses a 1-15 character range. Enable **Lower case** in username settings to convert capital letters before copy/export.
 
 ## Presets
 
@@ -119,7 +118,7 @@ Sift stores current extraction results in temporary browser session storage by d
 - **127.0.0.1 refused to connect:** You opened the old development URL. Load the extension from `/Users/heisnberg/Documents/Sift/dist/extension`, then click **Open Dashboard** in the popup.
 - **No active tab:** Open a normal `http` or `https` page before scanning.
 - **Unsupported browser page:** Browser internal pages such as `chrome://extensions` cannot be scanned.
-- **Empty dashboard:** Generate usernames on SnapBoard first, then click **Get Usernames** or **Get Display Names** in the Sift popup.
+- **Empty dashboard:** Generate usernames on SnapBoard first, then click **Get Data** in the Sift popup or dashboard.
 
 ## Known Limitations
 
