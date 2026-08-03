@@ -12,7 +12,7 @@ const usernameDefaultFilters = { ...defaultValueFilterOptions, minLength: 1, max
 const sessionsStorageKey = "sift:sessions";
 
 export function App() {
-  const [version, setVersion] = useState("0.1.9");
+  const [version, setVersion] = useState("0.1.10");
   const [mode, setMode] = useState<VisibleMode>("username");
   const [sessions, setSessions] = useState<ExtractionSession[]>([]);
   const [usernameFilters, setUsernameFilters] = useState<ValueFilterOptions>(usernameDefaultFilters);
@@ -271,7 +271,7 @@ function SettingsGroup({
       ) : null}
       <label>
         <input type="checkbox" checked={filters.collapseSpaces} onChange={(event) => onChange(mode, "collapseSpaces", event.target.checked)} />
-        Trim spaces
+        Clean spaces
       </label>
     </section>
   );

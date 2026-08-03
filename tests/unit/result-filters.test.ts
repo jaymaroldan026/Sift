@@ -36,5 +36,10 @@ describe("result cleanup filters", () => {
     expect(applyValueFilters("lic ♡", { removeEmoji: true })).toBe("lic");
     expect(applyValueFilters("✦ alicia ✧", { removeEmoji: true })).toBe("alicia");
     expect(applyValueFilters("° ✧ alicia ✧", { removeEmoji: true })).toBe("alicia");
+    expect(applyValueFilters("˚· alicia ˚·", { removeEmoji: true })).toBe("alicia");
+  });
+
+  it("trims leading and trailing spaces and collapses repeated whitespace", () => {
+    expect(applyValueFilters("  alicia    rose  ", { collapseSpaces: true })).toBe("alicia rose");
   });
 });
