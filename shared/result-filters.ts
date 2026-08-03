@@ -8,6 +8,7 @@ export interface ValueFilterOptions {
   removeEmoji: boolean;
   removeEmojiOnly?: boolean;
   removeSymbols: boolean;
+  removeDuplicates?: boolean;
   collapseSpaces: boolean;
   lowercase?: boolean;
   minLength?: number;
@@ -41,4 +42,15 @@ function isOutsideLengthRange(value: string, options: Partial<ValueFilterOptions
   if (options.minLength && value.length < options.minLength) return true;
   if (options.maxLength && value.length > options.maxLength) return true;
   return false;
+}
+
+export function applyUniqueFilter<T extends { cleanedValue: string }>(rows: T[], enabled = false): T[] {
+  if (!enabled) return rows;
+  const seen = new Set<string>();
+  return rows.filter((row) => {
+    const key = row.cleanedValue.trim();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }

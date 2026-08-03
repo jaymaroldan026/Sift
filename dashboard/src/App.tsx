@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { scanCurrentSnapBoardTab } from "../../shared/browser-scan";
 import { createExportFilename } from "../../shared/exporters";
-import { applyValueFilters, defaultValueFilterOptions, type ValueFilterOptions } from "../../shared/result-filters";
+import { applyUniqueFilter, applyValueFilters, defaultValueFilterOptions, type ValueFilterOptions } from "../../shared/result-filters";
 import type { ExtractionMode, ExtractionRow, ExtractionSession } from "../../shared/types";
 import { clearSessions, exportRows, getHealth, listSessions } from "./lib/api";
 
@@ -12,7 +12,7 @@ const usernameDefaultFilters = { ...defaultValueFilterOptions, minLength: 1, max
 const sessionsStorageKey = "sift:sessions";
 
 export function App() {
-  const [version, setVersion] = useState("0.1.12");
+  const [version, setVersion] = useState("0.1.13");
   const [mode, setMode] = useState<VisibleMode>("username");
   const [sessions, setSessions] = useState<ExtractionSession[]>([]);
   const [usernameFilters, setUsernameFilters] = useState<ValueFilterOptions>(usernameDefaultFilters);
@@ -264,6 +264,14 @@ function SettingsGroup({
         </label>
       ) : null}
       <label>
+        <input
+          type="checkbox"
+          checked={Boolean(filters.removeDuplicates)}
+          onChange={(event) => onChange(mode, "removeDuplicates", event.target.checked)}
+        />
+        Remove duplicate
+      </label>
+      <label>
         <input type="checkbox" checked={filters.collapseSpaces} onChange={(event) => onChange(mode, "collapseSpaces", event.target.checked)} />
         Clean spaces
       </label>
@@ -280,10 +288,11 @@ function createVisibleRows(
   mode: VisibleMode,
   filters: ValueFilterOptions
 ): ExtractionRow[] {
-  return (session?.rows ?? [])
+  const rows = (session?.rows ?? [])
     .filter((row) => row.status === "valid" && row.type === mode)
     .map((row) => ({ ...row, cleanedValue: applyValueFilters(row.cleanedValue, filters) }))
     .filter((row) => row.cleanedValue);
+  return applyUniqueFilter(rows, Boolean(filters.removeDuplicates));
 }
 
 function countDraftLines(value: string): number {

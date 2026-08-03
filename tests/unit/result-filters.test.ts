@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyValueFilters } from "../../shared/result-filters";
+import { applyValueFilters, applyUniqueFilter } from "../../shared/result-filters";
 
 describe("result cleanup filters", () => {
   it("removes numbers, emoji, and symbols when enabled", () => {
@@ -45,5 +45,16 @@ describe("result cleanup filters", () => {
 
   it("trims leading and trailing spaces and collapses repeated whitespace", () => {
     expect(applyValueFilters("  alicia    rose  ", { collapseSpaces: true })).toBe("alicia rose");
+  });
+
+  it("keeps the first result for each duplicate cleaned value", () => {
+    const rows = [
+      { id: "row_1", cleanedValue: "alicia" },
+      { id: "row_2", cleanedValue: "alicia" },
+      { id: "row_3", cleanedValue: "lici" }
+    ];
+
+    expect(applyUniqueFilter(rows, true).map((row) => row.id)).toEqual(["row_1", "row_3"]);
+    expect(applyUniqueFilter(rows, false).map((row) => row.id)).toEqual(["row_1", "row_2", "row_3"]);
   });
 });
