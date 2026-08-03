@@ -1,0 +1,11 @@
+node_modules/
+dist/
+release/
+server/database/*.sqlite
+server/database/*.sqlite-*
+.DS_Store
+.env
+coverage/
+playwright-report/
+.playwright-cli/
+snapboard username generator/

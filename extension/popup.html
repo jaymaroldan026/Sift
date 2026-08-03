@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sift</title>
+    <link rel="stylesheet" href="./styles/popup.css" />
+  </head>
+  <body>
+    <main class="popup-shell">
+      <header class="popup-header">
+        <div class="brand-mark">S</div>
+        <div>
+          <h1>Sift</h1>
+          <p id="domain">Detecting page...</p>
+        </div>
+      </header>
+
+      <section class="status-card" aria-live="polite">
+        <span id="connection-dot" class="dot"></span>
+        <span id="connection">Checking dashboard...</span>
+        <button id="open-dashboard" type="button">Open Dashboard</button>
+      </section>
+
+      <section class="controls-card">
+        <label for="mode">Extraction mode</label>
+        <div class="segmented" role="group" aria-label="Extraction mode">
+          <button class="mode active" type="button" data-mode="name">Names</button>
+          <button class="mode" type="button" data-mode="username">Usernames</button>
+          <button class="mode" type="button" data-mode="both">Both</button>
+        </div>
+
+        <div class="range-grid">
+          <label>
+            Min
+            <input id="min-length" type="number" min="1" value="8" />
+          </label>
+          <label>
+            Max
+            <input id="max-length" type="number" min="1" value="12" />
+          </label>
+        </div>
+
+        <label class="checkbox-row">
+          <input id="remove-invalid" type="checkbox" />
+          Remove invalid username characters
+        </label>
+      </section>
+
+      <section class="button-grid">
+        <button id="extract-names" type="button">Extract Names</button>
+        <button id="extract-usernames" type="button">Extract Usernames</button>
+        <button id="extract-both" type="button">Extract Both</button>
+        <button id="select-elements" type="button">Select Elements</button>
+        <button id="scan-current-page" type="button" class="wide">Scan Current Page</button>
+      </section>
+
+      <section class="result-card">
+        <div>
+          <span class="label">Last extraction</span>
+          <strong id="last-count">0</strong>
+        </div>
+        <progress id="progress" max="100" value="0"></progress>
+      </section>
+
+      <p id="notice" class="notice" aria-live="polite"></p>
+    </main>
+    <script type="module" src="./popup.ts"></script>
+  </body>
+</html>
