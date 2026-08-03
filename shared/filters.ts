@@ -15,7 +15,7 @@ const SPACE_RE = /\s/u;
 const SYMBOL_RE = /[^\p{Letter}]/u;
 
 export const defaultNameOptions: NameFilterOptions = {
-  removeEmoji: true,
+  removeEmoji: false,
   removeNumbers: false,
   removePunctuation: false,
   keepAccentedCharacters: true,
@@ -35,18 +35,18 @@ export const defaultNameOptions: NameFilterOptions = {
 };
 
 export const defaultUsernameOptions: UsernameFilterOptions = {
-  lettersOnly: true,
-  lowercase: true,
+  lettersOnly: false,
+  lowercase: false,
   removeLeadingAt: true,
-  excludeNumbers: true,
+  excludeNumbers: false,
   excludeSymbols: true,
   excludeSpaces: true,
   allowUnderscores: false,
   allowPeriods: false,
   allowHyphens: false,
   excludedWords: [],
-  minLength: 8,
-  maxLength: 12,
+  minLength: 1,
+  maxLength: 15,
   caseSensitive: false,
   invalidCharacterHandling: "exclude"
 };
@@ -206,6 +206,7 @@ function firstUsernameRuleRejection(value: string, options: UsernameFilterOption
   const norm = (text?: string) => (options.caseSensitive ? text ?? "" : (text ?? "").toLocaleLowerCase());
 
   if (options.lettersOnly && /[^\p{Letter}]/u.test(value)) return "Contains symbol";
+  if (!options.lettersOnly && /[^\p{Letter}\p{Number}]/u.test(value)) return "Contains symbol";
   if (options.requiredPrefix && !compare.startsWith(norm(options.requiredPrefix))) return "Required prefix missing";
   if (options.requiredSuffix && !compare.endsWith(norm(options.requiredSuffix))) return "Required suffix missing";
   if (options.excludedPrefix && compare.startsWith(norm(options.excludedPrefix))) return "Excluded prefix found";

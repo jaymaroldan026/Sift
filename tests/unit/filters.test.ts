@@ -7,13 +7,13 @@ import {
 } from "../../shared/filters";
 
 describe("Sift cleaning defaults", () => {
-  it("removes emoji and zero-width characters from names while preserving accents and punctuation", () => {
-    expect(cleanName("✨ Chloé Rose \u200B-Jr. 🌹").cleaned).toBe("Chloé Rose -Jr.");
+  it("removes zero-width characters from names while preserving emoji, accents, and punctuation", () => {
+    expect(cleanName("✨ Chloé Rose \u200B-Jr. 🌹").cleaned).toBe("✨ Chloé Rose -Jr. 🌹");
   });
 
-  it("rejects default usernames containing numbers or symbols after removing a leading at sign", () => {
-    expect(cleanUsername("@chloe123").status).toBe("rejected");
-    expect(cleanUsername("@chloe123").rejectionReason).toBe("Contains number");
+  it("accepts short alphanumeric usernames with digits by default", () => {
+    expect(cleanUsername("@debo1").cleaned).toBe("debo1");
+    expect(cleanUsername("Lil08").cleaned).toBe("Lil08");
     expect(cleanUsername("@chloe.rose").rejectionReason).toBe("Contains symbol");
   });
 

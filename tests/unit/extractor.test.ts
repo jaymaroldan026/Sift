@@ -14,9 +14,9 @@ describe("Sift extraction", () => {
     });
 
     const valid = result.rows.filter((row) => row.status === "valid");
-    expect(valid.map((row) => row.cleanedValue)).toContain("Chloe Rose");
+    expect(valid.map((row) => row.cleanedValue)).toContain("Chloe Rose 🌹");
     expect(valid.map((row) => row.cleanedValue)).toContain("chloerose");
-    expect(result.rows.find((row) => row.rawValue === "chloe123")?.rejectionReason).toBe("Contains number");
+    expect(result.rows.find((row) => row.rawValue === "chloe123")?.cleanedValue).toBe("chloe123");
   });
 
   it("preserves paired name and username relationships from repeated cards", () => {
@@ -29,7 +29,7 @@ describe("Sift extraction", () => {
     );
 
     expect(result.rows).toHaveLength(2);
-    expect(result.rows[0]).toMatchObject({ name: "Chloe Rose", username: "chloerose", status: "valid" });
+    expect(result.rows[0]).toMatchObject({ name: "Chloe Rose 🌹", username: "chloerose", status: "valid" });
   });
 
   it("extracts usernames from final URL path segments", () => {
@@ -52,6 +52,6 @@ describe("Sift extraction", () => {
     );
 
     expect(result.rows[0]).toMatchObject({ name: "Chloé Rose", username: "chloerose" });
-    expect(result.rows[1].rejectionReason).toBe("Contains number");
+    expect(result.rows[1]).toMatchObject({ name: "Invalid", username: "chloe123", status: "valid" });
   });
 });

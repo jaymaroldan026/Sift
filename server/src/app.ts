@@ -14,7 +14,7 @@ export function createApp(database: SiftDatabase) {
   app.use(express.json({ limit: "20mb" }));
 
   app.get("/api/health", (_request, response) => {
-    response.json({ status: "ok", version: "0.1.1", storage: "sqlite", time: new Date().toISOString() });
+    response.json({ status: "ok", version: "0.1.2", storage: "sqlite", time: new Date().toISOString() });
   });
 
   app.use("/api/extractions", createExtractionRouter(database));

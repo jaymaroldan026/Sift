@@ -1,6 +1,6 @@
 # Sift
 
-Sift is a local-first Chromium browser extension with a bundled dashboard for extracting names, usernames, or paired name-and-username rows from text already visible in the active page DOM.
+Sift is a local-first Chromium browser extension with a bundled dashboard for extracting usernames or names from text already visible in the active page DOM.
 
 It works with Google Chrome, Microsoft Edge, and Chromium-based AdsPower profiles. Sift does not bypass authentication, CAPTCHA, access controls, private APIs, or security protections. It does not collect passwords, cookies, tokens, or credentials, and it does not send extracted data to cloud services.
 
@@ -66,17 +66,11 @@ Click **Select Elements** in the popup, hover a page element, then click it. Sif
 
 ## Extract Names
 
-Choose **Names** in the popup or dashboard. By default, Sift removes emoji, variation selectors, zero-width characters, and repeated spaces while preserving accented letters, spaces, apostrophes, hyphens, periods, normal punctuation, and original capitalization.
+Click **Get Names** in the popup or dashboard. By default, Sift removes zero-width characters and repeated spaces while preserving letters, numbers, emoji, hearts, symbols, punctuation, and original capitalization.
 
 ## Extract Usernames
 
-Choose **Usernames**. By default, Sift removes a leading `@`, lowercases the value, requires letters only, rejects numbers/spaces/symbols, applies the 8-12 character range, removes duplicates case-insensitively, and records rejection reasons.
-
-Change **Invalid character handling** to remove invalid characters instead of rejecting an entire value.
-
-## Extract Both
-
-Choose **Both** when names and usernames should be preserved as related rows. The shared extractor supports paired card and table extraction so unrelated names and usernames are not paired across different parent items.
+Click **Get Usernames**. By default, Sift removes a leading `@`, keeps original casing, allows letters and numbers such as `debo1` and `Lil08`, rejects spaces/symbols, and uses a 1-15 character range.
 
 ## Presets
 

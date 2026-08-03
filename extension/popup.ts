@@ -5,7 +5,6 @@ import type { ExtractionMode, ExtractionResult } from "../shared/types";
 const store = createLocalSiftStore();
 
 const state = {
-  mode: "username" as ExtractionMode,
   domain: "unknown",
   lastResult: undefined as ExtractionResult | undefined
 };
@@ -16,24 +15,11 @@ const els = {
   connectionDot: document.querySelector<HTMLSpanElement>("#connection-dot")!,
   notice: document.querySelector<HTMLParagraphElement>("#notice")!,
   lastCount: document.querySelector<HTMLElement>("#last-count")!,
-  progress: document.querySelector<HTMLProgressElement>("#progress")!,
-  minLength: document.querySelector<HTMLInputElement>("#min-length")!,
-  maxLength: document.querySelector<HTMLInputElement>("#max-length")!,
-  removeInvalid: document.querySelector<HTMLInputElement>("#remove-invalid")!
+  progress: document.querySelector<HTMLProgressElement>("#progress")!
 };
-
-document.querySelectorAll<HTMLButtonElement>(".mode").forEach((button) => {
-  button.addEventListener("click", () => {
-    state.mode = button.dataset.mode as ExtractionMode;
-    document.querySelectorAll(".mode").forEach((item) => item.classList.remove("active"));
-    button.classList.add("active");
-  });
-});
 
 document.querySelector("#extract-names")?.addEventListener("click", () => runExtraction("name"));
 document.querySelector("#extract-usernames")?.addEventListener("click", () => runExtraction("username"));
-document.querySelector("#extract-both")?.addEventListener("click", () => runExtraction("both"));
-document.querySelector("#scan-current-page")?.addEventListener("click", () => runExtraction(state.mode));
 document.querySelector("#open-dashboard")?.addEventListener("click", () => {
   chrome.tabs.create({ url: chrome.runtime.getURL("dashboard/index.html") });
 });
@@ -70,7 +56,7 @@ async function setActiveDomain() {
   els.domain.textContent = url.hostname;
 }
 
-async function runExtraction(mode: ExtractionMode) {
+async function runExtraction(mode: Exclude<ExtractionMode, "both">) {
   els.progress.value = 20;
   const page = await requestPageSnapshot();
   if (!page.text) {
@@ -85,9 +71,8 @@ async function runExtraction(mode: ExtractionMode) {
     sourceDomain: page.domain || state.domain,
     config: {
       usernameOptions: {
-        minLength: numberValue(els.minLength, 8),
-        maxLength: numberValue(els.maxLength, 12),
-        invalidCharacterHandling: els.removeInvalid.checked ? "remove" : "exclude"
+        minLength: 1,
+        maxLength: 15
       }
     }
   });
@@ -97,7 +82,7 @@ async function runExtraction(mode: ExtractionMode) {
   els.progress.value = 70;
   await saveResult(mode, result, page.domain || state.domain);
   els.progress.value = 100;
-  showNotice(`Scanned ${result.summary.totalScanned}. ${result.summary.validResults} valid, ${result.summary.rejectedResults} rejected.`);
+  showNotice(`Found ${result.summary.validResults} ${mode === "username" ? "usernames" : "names"}.`);
   setTimeout(() => (els.progress.value = 0), 800);
 }
 
@@ -118,11 +103,6 @@ async function saveResult(mode: ExtractionMode, result: ExtractionResult, domain
   } catch {
     showNotice("Preview created, but local browser storage is unavailable.", true);
   }
-}
-
-function numberValue(input: HTMLInputElement, fallback: number): number {
-  const value = Number.parseInt(input.value, 10);
-  return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
 function showNotice(message: string, error = false) {

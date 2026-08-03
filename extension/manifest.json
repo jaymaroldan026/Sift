@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Sift",
   "description": "Extract names and usernames from the rendered DOM of the active page and review them locally.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "action": {
     "default_title": "Sift",
     "default_popup": "popup.html"
