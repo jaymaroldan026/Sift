@@ -31,4 +31,10 @@ describe("result cleanup filters", () => {
     expect(applyValueFilters("🌹❤️🔥", { removeEmojiOnly: true })).toBe("");
     expect(applyValueFilters("Debster ❤️", { removeEmojiOnly: true })).toBe("Debster ❤️");
   });
+
+  it("removes decorative emoji symbols from display names", () => {
+    expect(applyValueFilters("lic ♡", { removeEmoji: true })).toBe("lic");
+    expect(applyValueFilters("✦ alicia ✧", { removeEmoji: true })).toBe("alicia");
+    expect(applyValueFilters("° ✧ alicia ✧", { removeEmoji: true })).toBe("alicia");
+  });
 });

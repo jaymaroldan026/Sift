@@ -4,7 +4,7 @@ import type { ExtractionMode, ExtractionRow, ExtractionSession, Preset, SourceTy
 
 const SESSIONS_KEY = "sift:sessions";
 const PRESETS_KEY = "sift:presets";
-const VERSION = "0.1.8";
+const VERSION = "0.1.9";
 
 export interface StorageDriver {
   get<T>(key: string, fallback: T): Promise<T>;

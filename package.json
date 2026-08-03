@@ -1,6 +1,6 @@
 {
   "name": "sift",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Local-first Chromium extension and dashboard for extracting names and usernames from rendered webpages.",
   "type": "module",
   "private": false,
