@@ -7,13 +7,14 @@ import { clearSessions, exportRows, getHealth, listSessions } from "./lib/api";
 type VisibleMode = Exclude<ExtractionMode, "both">;
 
 const emptyFilters = { ...defaultValueFilterOptions };
+const usernameDefaultFilters = { ...defaultValueFilterOptions, minLength: 1, maxLength: 15 };
 const sessionsStorageKey = "sift:sessions";
 
 export function App() {
-  const [version, setVersion] = useState("0.1.5");
+  const [version, setVersion] = useState("0.1.6");
   const [mode, setMode] = useState<VisibleMode>("username");
   const [sessions, setSessions] = useState<ExtractionSession[]>([]);
-  const [usernameFilters, setUsernameFilters] = useState<ValueFilterOptions>(emptyFilters);
+  const [usernameFilters, setUsernameFilters] = useState<ValueFilterOptions>(usernameDefaultFilters);
   const [nameFilters, setNameFilters] = useState<ValueFilterOptions>(emptyFilters);
   const [notice, setNotice] = useState("");
 
@@ -90,6 +91,18 @@ export function App() {
     setter((current) => ({ ...current, [key]: value }));
   }
 
+  function updateLengthFilter(key: "minLength" | "maxLength", value: number) {
+    setUsernameFilters((current) => {
+      const nextValue = Math.max(1, Math.min(30, value));
+      const next = { ...current, [key]: nextValue };
+      const minLength = next.minLength ?? 1;
+      const maxLength = next.maxLength ?? 15;
+      return minLength > maxLength
+        ? { ...next, [key === "minLength" ? "maxLength" : "minLength"]: nextValue }
+        : next;
+    });
+  }
+
   return (
     <main className="app-shell">
       <header className="topbar">
@@ -147,8 +160,7 @@ export function App() {
             <h2>Cleanup Rules</h2>
           </div>
 
-          <SettingsGroup mode="username" filters={usernameFilters} onChange={updateFilter} />
-          <SettingsGroup mode="name" filters={nameFilters} onChange={updateFilter} />
+          <SettingsGroup mode={mode} filters={activeFilters} onChange={updateFilter} onLengthChange={updateLengthFilter} />
         </aside>
       </section>
 
@@ -160,15 +172,44 @@ export function App() {
 function SettingsGroup({
   mode,
   filters,
-  onChange
+  onChange,
+  onLengthChange
 }: {
   mode: VisibleMode;
   filters: ValueFilterOptions;
   onChange: (mode: VisibleMode, key: keyof ValueFilterOptions, value: boolean) => void;
+  onLengthChange: (key: "minLength" | "maxLength", value: number) => void;
 }) {
   return (
     <section className="settings-group">
       <h3>{modeLabel(mode).title}</h3>
+      {mode === "username" ? (
+        <div className="length-control">
+          <span>Length</span>
+          <label>
+            <input
+              aria-label="Minimum username length"
+              min="1"
+              max="30"
+              type="number"
+              value={filters.minLength ?? 1}
+              onChange={(event) => onLengthChange("minLength", event.target.valueAsNumber || 1)}
+            />
+            Min
+          </label>
+          <label>
+            <input
+              aria-label="Maximum username length"
+              min="1"
+              max="30"
+              type="number"
+              value={filters.maxLength ?? 15}
+              onChange={(event) => onLengthChange("maxLength", event.target.valueAsNumber || 1)}
+            />
+            Max
+          </label>
+        </div>
+      ) : null}
       <label>
         <input type="checkbox" checked={filters.removeNumbers} onChange={(event) => onChange(mode, "removeNumbers", event.target.checked)} />
         Remove numbers

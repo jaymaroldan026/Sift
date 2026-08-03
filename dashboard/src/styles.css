@@ -23,6 +23,7 @@ body {
 }
 
 button,
+input,
 textarea {
   font: inherit;
 }
@@ -229,6 +230,37 @@ h3 {
 
 .settings-group input {
   accent-color: var(--accent-strong);
+}
+
+.length-control {
+  display: grid;
+  grid-template-columns: 1fr 72px 72px;
+  gap: 8px;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 10px;
+}
+
+.length-control span {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.length-control label {
+  display: grid;
+  gap: 4px;
+  min-height: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.length-control input {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 7px 8px;
+  font-weight: 800;
 }
 
 .notice {
