@@ -12,7 +12,7 @@ const usernameDefaultFilters = { ...defaultValueFilterOptions, minLength: 1, max
 const sessionsStorageKey = "sift:sessions";
 
 export function App() {
-  const [version, setVersion] = useState("0.1.11");
+  const [version, setVersion] = useState("0.1.12");
   const [mode, setMode] = useState<VisibleMode>("username");
   const [sessions, setSessions] = useState<ExtractionSession[]>([]);
   const [usernameFilters, setUsernameFilters] = useState<ValueFilterOptions>(usernameDefaultFilters);
@@ -251,7 +251,7 @@ function SettingsGroup({
           Remove emoji-only
         </label>
       ) : null}
-      {mode === "username" ? (
+      {mode === "username" || mode === "name" ? (
         <label>
           <input type="checkbox" checked={filters.removeNumbers} onChange={(event) => onChange(mode, "removeNumbers", event.target.checked)} />
           Remove numbers
