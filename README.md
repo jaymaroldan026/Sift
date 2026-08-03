@@ -54,9 +54,11 @@ The unpacked extension is generated at `dist/extension`.
 2. Open `chrome://extensions` or `edge://extensions`.
 3. Enable developer mode.
 4. Choose **Load unpacked**.
-5. Select `dist/extension`.
+5. Select `/Users/heisnberg/Documents/Sift/dist/extension`.
 6. Start the local API with `npm run start:server`.
 7. Click the Sift extension icon on a regular webpage.
+
+Do not select `/Users/heisnberg/Documents/Sift/extension`. That folder contains TypeScript source files for development, so Chrome cannot load its background script directly.
 
 ## Use Selector Mode
 

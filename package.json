@@ -15,7 +15,8 @@
     "build": "npm run build:dashboard && npm run build:server && npm run build:extension",
     "build:dashboard": "vite build --config dashboard/vite.config.ts",
     "build:server": "tsc -p tsconfig.server.json",
-    "build:extension": "vite build --config extension/vite.config.ts && node scripts/build-extension.mjs",
+    "build:extension": "vite build --config extension/vite.config.ts && node scripts/build-extension.mjs && node scripts/validate-extension.mjs dist/extension",
+    "validate:extension": "node scripts/validate-extension.mjs dist/extension",
     "package:release": "npm run build && node scripts/package-release.mjs"
   },
   "dependencies": {
