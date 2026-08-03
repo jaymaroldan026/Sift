@@ -11,6 +11,10 @@ const stylesOut = resolve(outDir, "styles");
 mkdirSync(stylesOut, { recursive: true });
 cpSync(resolve(root, "extension/styles/popup.css"), resolve(stylesOut, "popup.css"));
 
+const assetsOut = resolve(outDir, "assets");
+mkdirSync(assetsOut, { recursive: true });
+cpSync(resolve(root, "extension/assets"), assetsOut, { recursive: true });
+
 const dashboardBuild = resolve(root, "dist/dashboard");
 if (!existsSync(resolve(dashboardBuild, "index.html"))) {
   throw new Error("Dashboard build is missing. Run npm run build:dashboard before npm run build:extension.");

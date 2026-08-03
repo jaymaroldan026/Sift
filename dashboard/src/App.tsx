@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import logoUrl from "../../extension/assets/sift-logo-64.png";
 import { scanCurrentSnapBoardTab } from "../../shared/browser-scan";
 import { createExportFilename } from "../../shared/exporters";
 import { applyUniqueFilter, applyValueFilters, defaultValueFilterOptions, type ValueFilterOptions } from "../../shared/result-filters";
@@ -12,7 +13,7 @@ const usernameDefaultFilters = { ...defaultValueFilterOptions, minLength: 1, max
 const sessionsStorageKey = "sift:sessions";
 
 export function App() {
-  const [version, setVersion] = useState("0.1.13");
+  const [version, setVersion] = useState("0.1.14");
   const [mode, setMode] = useState<VisibleMode>("username");
   const [sessions, setSessions] = useState<ExtractionSession[]>([]);
   const [usernameFilters, setUsernameFilters] = useState<ValueFilterOptions>(usernameDefaultFilters);
@@ -131,7 +132,7 @@ export function App() {
     <main className="app-shell">
       <header className="topbar">
         <div className="brand">
-          <div className="brand-mark">S</div>
+          <img className="brand-mark" src={logoUrl} alt="Sift logo" />
           <div>
             <h1>Sift</h1>
             <p>SnapBoard username and display-name extractor.</p>
@@ -190,6 +191,7 @@ export function App() {
       </section>
 
       <p className="notice" role="status">{notice}</p>
+      <p className="powered-by">Powered by Roldan Creations</p>
     </main>
   );
 }

@@ -21,6 +21,8 @@ const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 const requiredFiles = [
   manifest.background?.service_worker,
   manifest.action?.default_popup,
+  ...Object.values(manifest.action?.default_icon ?? {}),
+  ...Object.values(manifest.icons ?? {}),
   "dashboard/index.html",
   ...(manifest.content_scripts ?? []).flatMap((script) => script.js ?? [])
 ].filter(Boolean);

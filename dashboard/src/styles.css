@@ -98,14 +98,9 @@ input:focus-visible {
 }
 
 .brand-mark {
-  display: grid;
   width: 42px;
   height: 42px;
-  place-items: center;
-  border-radius: var(--radius);
-  background: var(--accent);
-  font-size: 22px;
-  font-weight: 900;
+  object-fit: contain;
 }
 
 h1,
@@ -265,6 +260,13 @@ h3 {
 
 .notice {
   min-height: 20px;
+}
+
+.powered-by {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+  text-align: center;
 }
 
 @media (max-width: 860px) {

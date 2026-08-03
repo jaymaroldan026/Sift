@@ -2,10 +2,22 @@
   "manifest_version": 3,
   "name": "Sift",
   "description": "Extract names and usernames from the rendered DOM of the active page and review them locally.",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "action": {
     "default_title": "Sift",
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "assets/sift-logo-16.png",
+      "32": "assets/sift-logo-32.png",
+      "48": "assets/sift-logo-48.png",
+      "128": "assets/sift-logo-128.png"
+    }
+  },
+  "icons": {
+    "16": "assets/sift-logo-16.png",
+    "32": "assets/sift-logo-32.png",
+    "48": "assets/sift-logo-48.png",
+    "128": "assets/sift-logo-128.png"
   },
   "permissions": ["activeTab", "scripting", "storage", "tabs"],
   "host_permissions": ["https://snapboard.onrender.com/*", "http://snapboard.onrender.com/*"],
