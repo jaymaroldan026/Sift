@@ -14,7 +14,8 @@ const els = {
   notice: document.querySelector<HTMLParagraphElement>("#notice")!,
   usernameCount: document.querySelector<HTMLElement>("#username-count")!,
   nameCount: document.querySelector<HTMLElement>("#name-count")!,
-  progress: document.querySelector<HTMLProgressElement>("#progress")!
+  progress: document.querySelector<HTMLProgressElement>("#progress")!,
+  getData: document.querySelector<HTMLButtonElement>("#get-data")!
 };
 
 document.querySelector("#get-data")?.addEventListener("click", () => {
@@ -45,6 +46,8 @@ async function setActiveDomain() {
 }
 
 async function runDataScan() {
+  els.getData.disabled = true;
+  els.getData.textContent = "Scanning...";
   els.progress.value = 20;
   try {
     const counts = await scanActiveTabForData();
@@ -58,6 +61,9 @@ async function runDataScan() {
   } catch (error) {
     els.progress.value = 0;
     showNotice(error instanceof Error ? error.message : "Could not scan this tab.", true);
+  } finally {
+    els.getData.disabled = false;
+    els.getData.textContent = "Get Data";
   }
 }
 

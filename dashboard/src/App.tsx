@@ -13,13 +13,14 @@ const usernameDefaultFilters = { ...defaultValueFilterOptions, minLength: 1, max
 const sessionsStorageKey = "sift:sessions";
 
 export function App() {
-  const [version, setVersion] = useState("0.1.14");
+  const [version, setVersion] = useState("0.1.15");
   const [mode, setMode] = useState<VisibleMode>("username");
   const [sessions, setSessions] = useState<ExtractionSession[]>([]);
   const [usernameFilters, setUsernameFilters] = useState<ValueFilterOptions>(usernameDefaultFilters);
   const [nameFilters, setNameFilters] = useState<ValueFilterOptions>(emptyFilters);
   const [resultDrafts, setResultDrafts] = useState<Record<VisibleMode, string>>({ username: "", name: "" });
   const [notice, setNotice] = useState("");
+  const [isScanning, setIsScanning] = useState(false);
 
   useEffect(() => {
     void refresh();
@@ -102,12 +103,15 @@ export function App() {
   }
 
   async function getDataFromSnapBoard() {
+    setIsScanning(true);
     try {
       const counts = await scanCurrentSnapBoardTab();
       await refresh();
       setNotice(`Found ${counts.usernames} usernames and ${counts.names} display names.`);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "No SnapBoard tab found.");
+    } finally {
+      setIsScanning(false);
     }
   }
 
@@ -151,18 +155,30 @@ export function App() {
               <p className="eyebrow">Results</p>
               <h2>{modeLabel(mode).title}</h2>
             </div>
-            <div className="actions">
-              <button type="button" onClick={getDataFromSnapBoard}>Get Data</button>
-              <button className={mode === "username" ? "active" : ""} type="button" onClick={() => setMode("username")}>
-                Usernames
-              </button>
-              <button className={mode === "name" ? "active" : ""} type="button" onClick={() => setMode("name")}>
-                Display Names
-              </button>
-              <button type="button" onClick={copyValues}>Copy</button>
-              <button type="button" onClick={() => download("txt")}>TXT</button>
-              <button type="button" onClick={() => download("csv")}>CSV</button>
-              <button type="button" onClick={clearResults}>Clear</button>
+            <div className="actions-toolbar">
+              <div className="toolbar-group primary-group">
+                <button className="primary-action" disabled={isScanning} type="button" onClick={getDataFromSnapBoard}>
+                  {isScanning ? "Scanning..." : "Get Data"}
+                </button>
+              </div>
+              <div className="mode-switch" role="group" aria-label="Result type">
+                <button className={mode === "username" ? "active" : ""} type="button" onClick={() => setMode("username")}>
+                  Usernames
+                </button>
+                <button className={mode === "name" ? "active" : ""} type="button" onClick={() => setMode("name")}>
+                  Display Names
+                </button>
+              </div>
+              <div className="toolbar-group export-group" aria-label="Export results">
+                <button disabled={!activeDraft.trim()} type="button" onClick={copyValues}>Copy</button>
+                <button disabled={!activeDraft.trim()} type="button" onClick={() => download("txt")}>TXT</button>
+                <button disabled={!activeDraft.trim()} type="button" onClick={() => download("csv")}>CSV</button>
+              </div>
+              <div className="toolbar-group danger-group">
+                <button className="danger-action" disabled={!activeDraft.trim() && sessions.length === 0} type="button" onClick={clearResults}>
+                  Clear
+                </button>
+              </div>
             </div>
           </div>
 
