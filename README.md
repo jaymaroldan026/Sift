@@ -64,6 +64,15 @@ Do not select `/Users/heisnberg/Documents/Sift/extension`. That folder contains 
 
 Click **Select Elements** in the popup, hover a page element, then click it. Sift highlights the hovered element, shows a selector preview, counts matches, and sends the chosen selector through extension messaging. Press Escape to cancel.
 
+## Use With SnapBoard
+
+Open SnapBoard's **Username Generator** page and generate the count you want there. Click the Sift extension popup:
+
+- **Get Usernames** scans all generated `.username-value` entries on the page.
+- **Get Names** scans all generated `.display-value` entries on the page.
+
+Open the bundled Sift dashboard to copy/export the latest scan or apply cleanup filters such as removing numbers, emoji, symbols, and extra spaces.
+
 ## Extract Names
 
 Click **Get Names** in the popup or dashboard. By default, Sift removes zero-width characters and repeated spaces while preserving letters, numbers, emoji, hearts, symbols, punctuation, and original capitalization.

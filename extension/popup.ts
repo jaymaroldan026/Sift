@@ -1,6 +1,6 @@
 import { extractFromText } from "../shared/extractor";
 import { createLocalSiftStore } from "../shared/local-store";
-import type { ExtractionMode, ExtractionResult } from "../shared/types";
+import type { ExtractionMode, ExtractionResult, ExtractionRow } from "../shared/types";
 
 const store = createLocalSiftStore();
 
@@ -59,23 +59,31 @@ async function setActiveDomain() {
 async function runExtraction(mode: Exclude<ExtractionMode, "both">) {
   els.progress.value = 20;
   const page = await requestPageSnapshot();
-  if (!page.text) {
-    showNotice("No rendered text found on this page.", true);
+  const snapBoardValues = mode === "username" ? page.snapBoard?.usernames : page.snapBoard?.names;
+  const values = snapBoardValues?.length ? snapBoardValues : [];
+
+  if (!values.length && !page.text) {
+    showNotice(`No ${mode === "username" ? "usernames" : "names"} found on this page.`, true);
     els.progress.value = 0;
     return;
   }
 
-  const result = extractFromText(page.text, {
-    mode,
-    sourceType: "visible-page",
-    sourceDomain: page.domain || state.domain,
-    config: {
-      usernameOptions: {
-        minLength: 1,
-        maxLength: 15
-      }
-    }
-  });
+  const result = values.length
+    ? createResultFromValues(values, mode, page.domain || state.domain, mode === "username" ? ".username-value" : ".display-value")
+    : extractFromText(page.text, {
+        mode,
+        sourceType: "visible-page",
+        sourceDomain: page.domain || state.domain,
+        config: {
+          usernameOptions: {
+            minLength: 1,
+            maxLength: 15,
+            allowPeriods: true,
+            allowUnderscores: true,
+            allowHyphens: true
+          }
+        }
+      });
 
   state.lastResult = result;
   els.lastCount.textContent = String(result.summary.validResults);
@@ -86,7 +94,7 @@ async function runExtraction(mode: Exclude<ExtractionMode, "both">) {
   setTimeout(() => (els.progress.value = 0), 800);
 }
 
-async function requestPageSnapshot(): Promise<{ text: string; domain: string }> {
+async function requestPageSnapshot(): Promise<{ text: string; domain: string; snapBoard?: { usernames: string[]; names: string[] } }> {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab.id) throw new Error("No active tab found.");
   try {
@@ -103,6 +111,39 @@ async function saveResult(mode: ExtractionMode, result: ExtractionResult, domain
   } catch {
     showNotice("Preview created, but local browser storage is unavailable.", true);
   }
+}
+
+function createResultFromValues(
+  values: string[],
+  mode: Exclude<ExtractionMode, "both">,
+  domain: string,
+  selector: string
+): ExtractionResult {
+  const rows: ExtractionRow[] = values.map((value) => ({
+    id: `row_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`,
+    rawValue: value,
+    cleanedValue: value,
+    name: mode === "name" ? value : undefined,
+    username: mode === "username" ? value : undefined,
+    type: mode,
+    status: "valid",
+    sourceDomain: domain,
+    sourceSelector: selector,
+    extractedAt: new Date().toISOString()
+  }));
+
+  return {
+    rows,
+    summary: {
+      totalScanned: rows.length,
+      validResults: rows.length,
+      uniqueResults: rows.length,
+      duplicates: 0,
+      rejectedResults: 0,
+      namesExtracted: mode === "name" ? rows.length : 0,
+      usernamesExtracted: mode === "username" ? rows.length : 0
+    }
+  };
 }
 
 function showNotice(message: string, error = false) {

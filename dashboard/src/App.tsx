@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createExportFilename } from "../../shared/exporters";
 import { extractFromText } from "../../shared/extractor";
 import { createConfig, defaultExtractionConfig } from "../../shared/filters";
+import { applyValueFilters, defaultValueFilterOptions, type ValueFilterOptions } from "../../shared/result-filters";
 import type { ExtractionMode, ExtractionRow, ExtractionSession } from "../../shared/types";
 import { createSession, exportRows, getHealth, listSessions } from "./lib/api";
 
@@ -14,6 +15,9 @@ export function App() {
   const [sourceText, setSourceText] = useState(sampleText);
   const [query, setQuery] = useState("");
   const [sessions, setSessions] = useState<ExtractionSession[]>([]);
+  const [activeSession, setActiveSession] = useState<ExtractionSession | undefined>();
+  const [manualDirty, setManualDirty] = useState(false);
+  const [filters, setFilters] = useState<ValueFilterOptions>(defaultValueFilterOptions);
   const [notice, setNotice] = useState("");
 
   const config = useMemo(
@@ -33,11 +37,20 @@ export function App() {
     [config, domain, mode, sourceText]
   );
 
+  const baseRows = useMemo(() => {
+    if (activeSession && !manualDirty && activeSession.mode !== "both") {
+      return activeSession.rows.filter((row) => row.type === activeSession.mode);
+    }
+    return result.rows;
+  }, [activeSession, manualDirty, result.rows]);
+
   const visibleRows = useMemo(() => {
-    return result.rows
+    return baseRows
       .filter((row) => row.status === "valid")
+      .map((row) => ({ ...row, cleanedValue: applyValueFilters(row.cleanedValue, filters) }))
+      .filter((row) => row.cleanedValue)
       .filter((row) => row.cleanedValue.toLocaleLowerCase().includes(query.toLocaleLowerCase()));
-  }, [query, result.rows]);
+  }, [baseRows, filters, query]);
 
   useEffect(() => {
     void refresh();
@@ -47,6 +60,11 @@ export function App() {
     const [health, history] = await Promise.all([getHealth(), listSessions()]);
     setVersion(health.version);
     setSessions(history);
+    if (!manualDirty && history[0] && history[0].mode !== "both") {
+      setActiveSession(history[0]);
+      setMode(history[0].mode);
+      setDomain(history[0].domain);
+    }
   }
 
   async function extract(nextMode: Exclude<ExtractionMode, "both">) {
@@ -65,6 +83,8 @@ export function App() {
       rows: nextResult.rows
     });
     setSessions((current) => [session, ...current]);
+    setActiveSession(session);
+    setManualDirty(false);
     setNotice(`Found ${session.summary.validResults} ${nextMode === "username" ? "usernames" : "names"}.`);
   }
 
@@ -82,6 +102,10 @@ export function App() {
     link.download = createExportFilename(mode, domain, format);
     link.click();
     URL.revokeObjectURL(url);
+  }
+
+  function updateFilter(key: keyof ValueFilterOptions, value: boolean) {
+    setFilters((current) => ({ ...current, [key]: value }));
   }
 
   return (
@@ -129,12 +153,24 @@ export function App() {
                 accept=".txt,.csv,text/plain,text/csv"
                 onChange={async (event) => {
                   const file = event.target.files?.[0];
-                  if (file) setSourceText(await file.text());
+                  if (file) {
+                    setSourceText(await file.text());
+                    setManualDirty(true);
+                    setActiveSession(undefined);
+                  }
                 }}
               />
             </label>
           </div>
-          <textarea aria-label="Text to extract from" value={sourceText} onChange={(event) => setSourceText(event.target.value)} />
+          <textarea
+            aria-label="Text to extract from"
+            value={sourceText}
+            onChange={(event) => {
+              setSourceText(event.target.value);
+              setManualDirty(true);
+              setActiveSession(undefined);
+            }}
+          />
         </section>
 
         <section className="panel results-panel">
@@ -156,6 +192,25 @@ export function App() {
           </div>
 
           <input className="search" placeholder={`Search ${mode === "username" ? "usernames" : "names"}`} value={query} onChange={(event) => setQuery(event.target.value)} />
+
+          <div className="filter-row" aria-label="Cleanup filters">
+            <label>
+              <input type="checkbox" checked={filters.removeNumbers} onChange={(event) => updateFilter("removeNumbers", event.target.checked)} />
+              Remove numbers
+            </label>
+            <label>
+              <input type="checkbox" checked={filters.removeEmoji} onChange={(event) => updateFilter("removeEmoji", event.target.checked)} />
+              Remove emoji
+            </label>
+            <label>
+              <input type="checkbox" checked={filters.removeSymbols} onChange={(event) => updateFilter("removeSymbols", event.target.checked)} />
+              Remove symbols
+            </label>
+            <label>
+              <input type="checkbox" checked={filters.collapseSpaces} onChange={(event) => updateFilter("collapseSpaces", event.target.checked)} />
+              Trim spaces
+            </label>
+          </div>
 
           <div className="result-list">
             {visibleRows.map((row) => (

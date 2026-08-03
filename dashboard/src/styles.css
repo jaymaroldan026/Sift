@@ -255,6 +255,30 @@ h2 {
   min-height: 44px;
 }
 
+.filter-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+.filter-row label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.filter-row input {
+  width: auto;
+  accent-color: var(--accent-strong);
+}
+
 .result-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
@@ -302,6 +326,10 @@ h2 {
   }
 
   .primary-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-row {
     grid-template-columns: 1fr;
   }
 }
