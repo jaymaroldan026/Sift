@@ -23,18 +23,6 @@ document.querySelector("#extract-usernames")?.addEventListener("click", () => ru
 document.querySelector("#open-dashboard")?.addEventListener("click", () => {
   chrome.tabs.create({ url: chrome.runtime.getURL("dashboard/index.html") });
 });
-document.querySelector("#select-elements")?.addEventListener("click", async () => {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab.id) return showNotice("No active tab found.", true);
-  await chrome.runtime.sendMessage({ type: "SIFT_START_SELECTOR", tabId: tab.id });
-  window.close();
-});
-
-chrome.runtime.onMessage.addListener((message) => {
-  if (message?.type === "SIFT_SELECTOR_CHOSEN") {
-    showNotice(`Selector found: ${message.selector}`);
-  }
-});
 
 init().catch((error) => showNotice(error instanceof Error ? error.message : "Popup initialization failed.", true));
 

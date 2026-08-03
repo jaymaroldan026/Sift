@@ -2,14 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import { createExportFilename } from "../../shared/exporters";
 import { applyValueFilters, defaultValueFilterOptions, type ValueFilterOptions } from "../../shared/result-filters";
 import type { ExtractionMode, ExtractionRow, ExtractionSession } from "../../shared/types";
-import { exportRows, getHealth, listSessions } from "./lib/api";
+import { clearSessions, exportRows, getHealth, listSessions } from "./lib/api";
 
 type VisibleMode = Exclude<ExtractionMode, "both">;
 
 const emptyFilters = { ...defaultValueFilterOptions };
+const sessionsStorageKey = "sift:sessions";
 
 export function App() {
-  const [version, setVersion] = useState("0.1.3");
+  const [version, setVersion] = useState("0.1.5");
   const [mode, setMode] = useState<VisibleMode>("username");
   const [sessions, setSessions] = useState<ExtractionSession[]>([]);
   const [usernameFilters, setUsernameFilters] = useState<ValueFilterOptions>(emptyFilters);
@@ -18,6 +19,30 @@ export function App() {
 
   useEffect(() => {
     void refresh();
+  }, []);
+
+  useEffect(() => {
+    const refreshOnFocus = () => {
+      void refresh();
+    };
+    const refreshOnStorageChange = (changes: Record<string, chrome.storage.StorageChange>, areaName: string) => {
+      if (areaName === "session" && changes[sessionsStorageKey]) void refresh();
+    };
+
+    window.addEventListener("focus", refreshOnFocus);
+    globalThis.chrome?.storage?.onChanged?.addListener(refreshOnStorageChange);
+    return () => {
+      window.removeEventListener("focus", refreshOnFocus);
+      globalThis.chrome?.storage?.onChanged?.removeListener(refreshOnStorageChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    const clearOnClose = () => {
+      void clearSessions();
+    };
+    window.addEventListener("pagehide", clearOnClose);
+    return () => window.removeEventListener("pagehide", clearOnClose);
   }, []);
 
   const activeSession = useMemo(() => findLatestSession(sessions, mode), [mode, sessions]);
@@ -52,6 +77,12 @@ export function App() {
     link.download = createExportFilename(mode, activeSession?.domain ?? "snapboard", format);
     link.click();
     URL.revokeObjectURL(url);
+  }
+
+  async function clearResults() {
+    await clearSessions();
+    setSessions([]);
+    setNotice("Cleared temporary results.");
   }
 
   function updateFilter(targetMode: VisibleMode, key: keyof ValueFilterOptions, value: boolean) {
@@ -92,6 +123,7 @@ export function App() {
               <button type="button" onClick={copyValues}>Copy</button>
               <button type="button" onClick={() => download("txt")}>TXT</button>
               <button type="button" onClick={() => download("csv")}>CSV</button>
+              <button type="button" onClick={clearResults}>Clear</button>
             </div>
           </div>
 
@@ -118,14 +150,6 @@ export function App() {
           <SettingsGroup mode="username" filters={usernameFilters} onChange={updateFilter} />
           <SettingsGroup mode="name" filters={nameFilters} onChange={updateFilter} />
         </aside>
-      </section>
-
-      <section className="history-strip" aria-label="Recent extractions">
-        <div>
-          <p className="eyebrow">Recent</p>
-          <strong>{sessions.length ? `${sessions.length} saved scans` : "No SnapBoard scan yet"}</strong>
-        </div>
-        <button type="button" onClick={refresh}>Refresh</button>
       </section>
 
       <p className="notice" role="status">{notice}</p>

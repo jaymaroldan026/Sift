@@ -26,6 +26,10 @@ export async function deleteSession(id: string): Promise<void> {
   await store.deleteSession(id);
 }
 
+export async function clearSessions(): Promise<void> {
+  await store.clearSessions();
+}
+
 export async function listPresets(): Promise<Preset[]> {
   return store.listPresets();
 }

@@ -4,7 +4,7 @@ import type { ExtractionMode, ExtractionRow, ExtractionSession, Preset, SourceTy
 
 const SESSIONS_KEY = "sift:sessions";
 const PRESETS_KEY = "sift:presets";
-const VERSION = "0.1.4";
+const VERSION = "0.1.5";
 
 export interface StorageDriver {
   get<T>(key: string, fallback: T): Promise<T>;
@@ -30,7 +30,7 @@ export type SavePresetPayload = Pick<Preset, "name" | "description" | "isDefault
 export function createLocalSiftStore(driver = createDefaultStorageDriver()) {
   return {
     async getHealth() {
-      return { status: "ok", version: VERSION, storage: "browser-local" };
+      return { status: "ok", version: VERSION, storage: "browser-session" };
     },
     async listSessions(): Promise<ExtractionSession[]> {
       return driver.get(SESSIONS_KEY, []);
@@ -50,8 +50,14 @@ export function createLocalSiftStore(driver = createDefaultStorageDriver()) {
         updatedAt: now
       };
       const sessions = await this.listSessions();
-      await driver.set(SESSIONS_KEY, [session, ...sessions].slice(0, 100));
+      await driver.set(
+        SESSIONS_KEY,
+        [session, ...sessions.filter((item) => item.mode !== payload.mode)].slice(0, 2)
+      );
       return session;
+    },
+    async clearSessions(): Promise<void> {
+      await driver.set(SESSIONS_KEY, []);
     },
     async deleteSession(id: string): Promise<void> {
       const sessions = await this.listSessions();
@@ -109,13 +115,12 @@ export function createMemoryStorageDriver(seed: Record<string, unknown> = {}): S
 }
 
 export function createDefaultStorageDriver(): StorageDriver {
-  if (hasChromeStorage()) return createChromeStorageDriver();
-  return createLocalStorageDriver();
+  const chromeSessionStorage = getChromeStorage("session");
+  if (chromeSessionStorage) return createChromeStorageDriver(chromeSessionStorage);
+  return createSessionStorageDriver();
 }
 
-function createChromeStorageDriver(): StorageDriver {
-  const storage = getChromeStorage();
-  if (!storage) return createLocalStorageDriver();
+function createChromeStorageDriver(storage: ChromeStorageArea): StorageDriver {
   return {
     async get<T>(key: string, fallback: T): Promise<T> {
       const result = await storage.get(key);
@@ -127,24 +132,20 @@ function createChromeStorageDriver(): StorageDriver {
   };
 }
 
-function createLocalStorageDriver(): StorageDriver {
+function createSessionStorageDriver(): StorageDriver {
   return {
     async get<T>(key: string, fallback: T): Promise<T> {
-      const value = globalThis.localStorage?.getItem(key);
+      const value = globalThis.sessionStorage?.getItem(key);
       return value ? (JSON.parse(value) as T) : fallback;
     },
     async set<T>(key: string, value: T): Promise<void> {
-      globalThis.localStorage?.setItem(key, JSON.stringify(value));
+      globalThis.sessionStorage?.setItem(key, JSON.stringify(value));
     }
   };
 }
 
-function hasChromeStorage(): boolean {
-  return Boolean(getChromeStorage());
-}
-
-function getChromeStorage(): ChromeStorageArea | undefined {
-  return (globalThis as { chrome?: { storage?: { local?: ChromeStorageArea } } }).chrome?.storage?.local;
+function getChromeStorage(area: "session" | "local"): ChromeStorageArea | undefined {
+  return (globalThis as { chrome?: { storage?: { local?: ChromeStorageArea; session?: ChromeStorageArea } } }).chrome?.storage?.[area];
 }
 
 function createId(prefix: string): string {

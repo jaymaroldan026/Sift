@@ -32,7 +32,7 @@ For optional API development:
 npm run start:server
 ```
 
-The bundled extension dashboard stores sessions and presets in browser storage. The optional API still runs at `http://127.0.0.1:5174` for development experiments.
+The bundled extension dashboard stores only the current temporary scans in browser session storage. The optional API still runs at `http://127.0.0.1:5174` for development experiments.
 
 ## Build
 
@@ -60,10 +60,6 @@ The unpacked extension is generated at `dist/extension`, including the bundled d
 
 Do not select `/Users/heisnberg/Documents/Sift/extension`. That folder contains TypeScript source files for development, so Chrome cannot load its background script directly.
 
-## Use Selector Mode
-
-Click **Select Elements** in the popup, hover a page element, then click it. Sift highlights the hovered element, shows a selector preview, counts matches, and sends the chosen selector through extension messaging. Press Escape to cancel.
-
 ## Use With SnapBoard
 
 Open SnapBoard's **Username Generator** page and generate the count you want there. Click the Sift extension popup:
@@ -71,7 +67,7 @@ Open SnapBoard's **Username Generator** page and generate the count you want the
 - **Get Usernames** scans all generated `.username-value` entries on the page.
 - **Get Display Names** scans all generated `.display-value` entries on the page.
 
-Open the bundled Sift dashboard to copy/export the latest scan or apply cleanup filters such as removing numbers, emoji, symbols, and extra spaces.
+Open the bundled Sift dashboard to copy/export the current scan or apply cleanup filters such as removing numbers, emoji, symbols, and extra spaces. Dashboard results are temporary; use **Clear** to empty them, or close the dashboard tab to clear the current scan view.
 
 ## Extract Names
 
@@ -83,11 +79,11 @@ Click **Get Usernames**. By default, Sift removes a leading `@`, keeps original 
 
 ## Presets
 
-Use **Save Preset** in the dashboard to store the active configuration locally. Presets are saved in browser storage on your computer.
+Cleanup settings are kept in the current dashboard view. No server is needed for normal use.
 
 ## Export
 
-Use dashboard export buttons to download CSV or JSON. TXT, CSV, and JSON formatting is handled locally in the browser.
+Use dashboard export buttons to download TXT or CSV. Formatting is handled locally in the browser.
 
 ## Scripts
 
@@ -116,18 +112,16 @@ npm run typecheck
 
 ## Local Data
 
-Sift stores extraction sessions and presets in browser storage by default. The optional development API stores data in `server/database/sift.sqlite` when you run `npm run start:server`.
+Sift stores current extraction results in temporary browser session storage by default. Closing the dashboard tab or clicking **Clear** removes those temporary results. The optional development API stores data in `server/database/sift.sqlite` when you run `npm run start:server`.
 
 ## Common Errors
 
 - **127.0.0.1 refused to connect:** You opened the old development URL. Load the extension from `/Users/heisnberg/Documents/Sift/dist/extension`, then click **Open Dashboard** in the popup.
 - **No active tab:** Open a normal `http` or `https` page before scanning.
 - **Unsupported browser page:** Browser internal pages such as `chrome://extensions` cannot be scanned.
-- **Invalid selector:** Reopen selector mode or simplify the CSS selector.
-- **No selector matches:** The page layout may have changed or the selector may target hidden content.
+- **Empty dashboard:** Generate usernames on SnapBoard first, then click **Get Usernames** or **Get Display Names** in the Sift popup.
 
 ## Known Limitations
 
-- Auto-scroll and pagination controls are represented in the dashboard, but conservative active-page extraction is the default MVP path.
-- Very large tables are supported through shared utilities, while dashboard rendering previews the first 25 rows for responsiveness.
-- Selector mode chooses stable selectors heuristically and may need adjustment on sites with heavily generated class names.
+- Sift scans the generated values currently present in the SnapBoard page DOM.
+- If SnapBoard changes `.username-value` or `.display-value`, the SnapBoard-specific scanner will need an update.
